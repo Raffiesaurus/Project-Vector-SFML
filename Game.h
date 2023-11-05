@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <SFML/Graphics.hpp>
 #include <SFPhysics.h>
+#include "ScoreManager.h"
+#include "Spaceship.h"
 
 #define WINDOW_WIDTH 540
 #define WINDOW_HEIGHT 960
@@ -27,6 +29,9 @@ public:
 
 	void MouseMoveEventCheck(sf::Event::MouseMoveEvent mouse);
 	void MouseButtonPressEventCheck(sf::Event::MouseButtonEvent mButton);
+	void MouseButtonReleaseEventCheck(sf::Event::MouseButtonEvent mButton);
+
+	void FireBullet();
 
 	void UpdatePlayerMovement();
 	void UpdatePlayerRotation();
@@ -36,8 +41,7 @@ public:
 
 private:
 
-	int playerScore;
-	int opponentScore;
+	std::unique_ptr<ScoreManager> scoreManager;
 
 	bool isLeftPressed;
 	bool isRightPressed;
@@ -61,9 +65,18 @@ private:
 	sfp::PhysicsSprite playerSprite;
 	sfp::PhysicsSprite opponentSprite;
 
+	sfp::PhysicsCircle playerBullet;
+	sfp::PhysicsCircle opponentBullet;
+
 	sf::Sprite bgSprite;
 
 	sf::Vector2f playerPos;
 	sf::Vector2f lastMousePos;
+	sf::Vector2f firstBulletPoint;
+	sf::Vector2f secondBulletPoint;
+	sf::Vector2f firstBulletVector;
+	sf::Vector2f secondBulletVector;
+
+	sfp::World* world;
 };
 
