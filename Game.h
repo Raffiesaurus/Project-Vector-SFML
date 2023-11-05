@@ -3,6 +3,12 @@
 #include <iostream>
 #include <stdio.h>
 #include <SFML/Graphics.hpp>
+#include <SFPhysics.h>
+
+#define WINDOW_WIDTH 540
+#define WINDOW_HEIGHT 960
+
+# define PI 3.14159265358979323846 
 
 class Game {
 
@@ -52,8 +58,9 @@ private:
 	sf::Texture opponentTexture;
 	sf::Texture bgTexture;
 
-	sf::Sprite playerSprite;
-	sf::Sprite opponentSprite;
+	sfp::PhysicsSprite playerSprite;
+	sfp::PhysicsSprite opponentSprite;
+
 	sf::Sprite bgSprite;
 
 	sf::Vector2f playerPos;

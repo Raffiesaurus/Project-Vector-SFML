@@ -29,7 +29,7 @@ void Game::InitializeGame() {
 }
 
 void Game::InitializeScreen() {
-	window.create(sf::VideoMode(540, 960), "Project Vector");
+	window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Project Vector");
 	window.setFramerateLimit(60);
 
 	if (!font.loadFromFile("assets/Fonts/Roboto.ttf")) { LoadError("Font"); }
@@ -59,18 +59,17 @@ void Game::InitializePlayers() {
 		LoadError("Player Texture");
 	} else {
 		playerSprite.setTexture(playerTexture);
-		playerSprite.setOrigin(256, 256);
-		playerSprite.setScale(0.15, 0.15);
-		playerSprite.setPosition(40, 850);
+		playerSprite.setOrigin(40, 40);
+		playerSprite.setCenter(Vector2f(80, 890));
 	}
 
 	if (!opponentTexture.loadFromFile("assets/Sprites/Characters/enemy-ship.png")) {
 		LoadError("Enemy Texture");
 	} else {
 		opponentSprite.setTexture(opponentTexture);
-		opponentSprite.setOrigin(256, 256);
-		opponentSprite.setScale(0.15, -0.15);
-		opponentSprite.setPosition(400, 140);
+		opponentSprite.setOrigin(40, 40);
+		opponentSprite.setRotation(180);
+		opponentSprite.setCenter(sf::Vector2f(440, 180));
 	}
 
 	return;
@@ -160,15 +159,15 @@ void Game::KeyboardReleaseEventCheck(sf::Event::KeyEvent key) {
 void Game::UpdatePlayerMovement() {
 	float offsetX = 0.0f;
 	float offsetY = 0.0f;
-	sf::Vector2f playerPos = playerSprite.getPosition();
+	sf::Vector2f playerPos = playerSprite.getCenter();
 
-	if (isLeftPressed && playerPos.x > 40) { offsetX = -1.0f; }
+	if (isLeftPressed && (playerPos.x - 40) > 40) { offsetX = -1.0f; }
 
-	if (isRightPressed && playerPos.x < 560) { offsetX = 1.0f; }
+	if (isRightPressed && (playerPos.x + 40) < 560) { offsetX = 1.0f; }
 
-	if (isUpPressed && playerPos.y > 0) { offsetY = -1.0f; }
+	if (isUpPressed && (playerPos.y - 80) > 0) { offsetY = -1.0f; }
 
-	if (isDownPressed && playerPos.y < 860) { offsetY = 1.0f; }
+	if (isDownPressed && (playerPos.y - 40) < 860) { offsetY = 1.0f; }
 
 	if ((isLeftPressed && isRightPressed) || (!isLeftPressed && !isRightPressed)) { offsetX = 0.0f; }
 
@@ -191,16 +190,18 @@ void Game::MouseButtonPressEventCheck(sf::Event::MouseButtonEvent mButton) {
 }
 
 void Game::UpdatePlayerRotation() {
-	playerPos = playerSprite.getPosition();
-	float angle = atan2((lastMousePos.y - playerPos.y), (lastMousePos.x - playerPos.x));
-	angle = (angle * 180 / 3.1415) + 90;
+	playerPos = playerSprite.getCenter();
+	playerPos.x -= 40;
+	playerPos.y -= 40;
+	float angle = std::atan2((lastMousePos.y - playerPos.y), (lastMousePos.x - playerPos.x));
+	angle = (angle * 180 / PI) + 90;
 	playerSprite.setRotation(angle);
 }
 
 void Game::UpdatePlayerScore() {
-	playerScoreText.setString(std::to_string(playerSprite.getPosition().x));
+	playerScoreText.setString(std::to_string(playerSprite.getCenter().x));
 }
 
 void Game::UpdateOpponentScore() {
-	opponentScoreText.setString(std::to_string(playerSprite.getPosition().y));
+	opponentScoreText.setString(std::to_string(playerSprite.getCenter().y));
 }
