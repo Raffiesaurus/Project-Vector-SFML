@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <SFML/Graphics.hpp>
 #include <SFPhysics.h>
-#include "ScoreManager.h"
+#include "HealthManager.h"
 #include "Spaceship.h"
 
 #define WINDOW_WIDTH 540
@@ -36,12 +36,13 @@ public:
 	void UpdatePlayerMovement();
 	void UpdatePlayerRotation();
 
-	void UpdatePlayerScore();
-	void UpdateOpponentScore();
+	void UpdateHealthTexts();
+	void CheckBallCollision();
+	void CheckGameOver();
 
 private:
 
-	std::unique_ptr<ScoreManager> scoreManager;
+	std::unique_ptr<HealthManager> healthManager;
 
 	bool isLeftPressed;
 	bool isRightPressed;
@@ -50,13 +51,18 @@ private:
 
 	bool isGamePaused;
 	bool isPlaying;
+	bool isGameOver;
+
+	float playerMoveSpeed;
+	float bulletSpeed;
+	int bulletDmg;
 
 	sf::RenderWindow window;
 
 	sf::Font font;
 
-	sf::Text playerScoreText;
-	sf::Text opponentScoreText;
+	sf::Text playerHealthText;
+	sf::Text opponentHealthText;
 
 	sf::Texture playerTexture;
 	sf::Texture opponentTexture;

@@ -13,6 +13,11 @@ Game::Game() {
 	isRightPressed = false;
 	isGamePaused = false;
 	isPlaying = false;
+	isGameOver = false;
+
+	playerMoveSpeed = 7.5f;
+	bulletSpeed = 25.0f;
+	bulletDmg = 20;
 
 	playerPos = sf::Vector2f(0, 0);
 	lastMousePos = sf::Vector2f(0, 0);
@@ -27,7 +32,7 @@ Game::~Game() {}
 
 void Game::InitializeGame() {
 	std::cout << "Initialising game..." << std::endl;
-	scoreManager = std::make_unique<ScoreManager>();
+	healthManager = std::make_unique<HealthManager>();
 	InitializeScreen();
 	InitializePlayers();
 	Update();
@@ -43,17 +48,17 @@ void Game::InitializeScreen() {
 		bgSprite.setTexture(bgTexture);
 	}
 
-	playerScoreText.setFont(font);
-	playerScoreText.setString(std::to_string(scoreManager->GetPlayerScore()));
-	playerScoreText.setCharacterSize(24);
-	playerScoreText.setFillColor(sf::Color::Green);
-	playerScoreText.setPosition(500, 910);
+	playerHealthText.setFont(font);
+	playerHealthText.setString(std::to_string(healthManager->GetPlayerHealth()));
+	playerHealthText.setCharacterSize(24);
+	playerHealthText.setFillColor(sf::Color::Green);
+	playerHealthText.setPosition(500, 910);
 
-	opponentScoreText.setFont(font);
-	opponentScoreText.setString(std::to_string(scoreManager->GetOpponentScore()));
-	opponentScoreText.setCharacterSize(24);
-	opponentScoreText.setFillColor(sf::Color::Red);
-	opponentScoreText.setPosition(20, 20);
+	opponentHealthText.setFont(font);
+	opponentHealthText.setString(std::to_string(healthManager->GetOpponentHealth()));
+	opponentHealthText.setCharacterSize(24);
+	opponentHealthText.setFillColor(sf::Color::Red);
+	opponentHealthText.setPosition(20, 20);
 
 	return;
 }
@@ -79,14 +84,16 @@ void Game::InitializePlayers() {
 		world->AddPhysicsBody(opponentSprite);
 	}
 
-	opponentSprite.applyImpulse(sf::Vector2f(0, -10));
+	//opponentSprite.applyImpulse(sf::Vector2f(0, -10));
 
-	playerBullet.setSize(Vector2f(10, 10));
 	playerBullet.setStatic(true);
+	playerBullet.setSize(Vector2f(10, 10));
+	playerBullet.setCenter(sf::Vector2f(1000, 1000));
 	world->AddPhysicsBody(playerBullet);
 
-	opponentBullet.setSize(Vector2f(10, 10));
 	opponentBullet.setStatic(true);
+	opponentBullet.setSize(Vector2f(10, 10));
+	opponentBullet.setCenter(sf::Vector2f(1000, 1000));
 	world->AddPhysicsBody(opponentBullet);
 
 	return;
@@ -95,6 +102,7 @@ void Game::InitializePlayers() {
 void Game::Update() {
 	sf::Clock gameClock;
 	while (window.isOpen()) {
+
 
 		Time lastTime = gameClock.getElapsedTime();
 		bool done = false;
@@ -134,21 +142,64 @@ void Game::Update() {
 				MouseButtonReleaseEventCheck(event.mouseButton);
 			}
 		}
-
-		UpdatePlayerMovement();
-		UpdatePlayerRotation();
-		UpdatePlayerScore();
-		UpdateOpponentScore();
+		if (!isGameOver) {
+			CheckBallCollision();
+			UpdateHealthTexts();
+			CheckGameOver();
+			UpdatePlayerMovement();
+			UpdatePlayerRotation();
+		}
 
 		window.draw(bgSprite);
-		window.draw(playerScoreText);
-		window.draw(opponentScoreText);
+		window.draw(playerHealthText);
+		window.draw(opponentHealthText);
+		if (!playerBullet.getStatic())
+			window.draw(playerBullet);
+		if (!opponentBullet.getStatic())
+			window.draw(opponentBullet);
 		window.draw(playerSprite);
 		window.draw(opponentSprite);
-		window.draw(playerBullet);
-		window.draw(opponentBullet);
 		window.display();
 	}
+}
+
+void Game::CheckBallCollision() {
+	if (!playerBullet.getStatic()) {
+		if (playerBullet.collideWith(opponentSprite).hasCollided) {
+			playerBullet.setStatic(true);
+			sf::Vector2f playerPosition = playerSprite.getCenter();
+			playerPosition.x -= 40;
+			playerPosition.y -= 40;
+			playerBullet.setCenter(playerPosition);
+			healthManager->UpdateHealth(false, bulletDmg);
+		}
+	}
+
+	if (!opponentBullet.getStatic()) {
+		if (opponentBullet.collideWith(opponentSprite).hasCollided) {
+			opponentBullet.setStatic(true);
+			sf::Vector2f opponenetPosition = opponentSprite.getCenter();
+			opponenetPosition.x -= 40;
+			opponenetPosition.y -= 40;
+			opponentBullet.setCenter(opponenetPosition);
+			healthManager->UpdateHealth(true, bulletDmg);
+		}
+	}
+
+	return;
+}
+
+void Game::CheckGameOver() {
+	if (healthManager->GetPlayerHealth() <= 0) {
+		std::cout << " CAN'T BELIEVE YOU'VE DONE THIS \n";
+		isGameOver = true;
+	}
+
+	if (healthManager->GetOpponentHealth() <= 0) {
+		std::cout << " WINNER WINNER VEGAN DINNER \n";
+		isGameOver = true;
+	}
+
 }
 
 void Game::KeyboardPressEventCheck(sf::Event::KeyEvent key) {
@@ -199,13 +250,13 @@ void Game::UpdatePlayerMovement() {
 	float offsetY = 0.0f;
 	sf::Vector2f playerPos = playerSprite.getCenter();
 
-	if (isLeftPressed && (playerPos.x - 40) > 40) { offsetX = -1.0f; }
+	if (isLeftPressed && (playerPos.x - 40) > 40) { offsetX = -playerMoveSpeed; }
 
-	if (isRightPressed && (playerPos.x + 40) < 560) { offsetX = 1.0f; }
+	if (isRightPressed && (playerPos.x + 40) < 560) { offsetX = playerMoveSpeed; }
 
-	if (isUpPressed && (playerPos.y - 80) > 0) { offsetY = -1.0f; }
+	if (isUpPressed && (playerPos.y - 80) > 0) { offsetY = -playerMoveSpeed; }
 
-	if (isDownPressed && (playerPos.y - 40) < 860) { offsetY = 1.0f; }
+	if (isDownPressed && (playerPos.y - 40) < 860) { offsetY = playerMoveSpeed; }
 
 	if ((isLeftPressed && isRightPressed) || (!isLeftPressed && !isRightPressed)) { offsetX = 0.0f; }
 
@@ -237,14 +288,23 @@ void Game::MouseButtonReleaseEventCheck(sf::Event::MouseButtonEvent mButton) {
 }
 
 void Game::FireBullet() {
-	std::cout << "GO BULLET\n";
+	if (isGameOver) {
+		return;
+	}
 	sf::Vector2f playerPosition = playerSprite.getCenter();
 	playerPosition.x -= 40;
 	playerPosition.y -= 40;
 
-	sf::Vector2f dirVector = sf::Vector2f(((firstBulletPoint.x - playerPosition.x) / 25), ((firstBulletPoint.y - playerPosition.y) / 25));
+	sf::Vector2f dirVector = sf::Vector2f((firstBulletPoint.x - playerPosition.x),
+		(firstBulletPoint.y - playerPosition.y));
+	double len = sqrt(pow(dirVector.x, 2) + pow(dirVector.y, 2));
+	dirVector.x *= bulletSpeed / len;
+	dirVector.y *= bulletSpeed / len;
 
-	playerBullet.setCenter(playerPosition);
+
+	sf::Vector2f startPoint = sf::Vector2f((playerPosition.x + dirVector.x * 0.1), (playerPosition.y + dirVector.y * 0.1));
+
+	playerBullet.setCenter(startPoint);
 	playerBullet.setStatic(false);
 	playerBullet.setVelocity(dirVector);
 	return;
@@ -260,12 +320,8 @@ void Game::UpdatePlayerRotation() {
 	return;
 }
 
-void Game::UpdatePlayerScore() {
-	playerScoreText.setString(std::to_string(playerSprite.getCenter().x));
-	return;
-}
-
-void Game::UpdateOpponentScore() {
-	opponentScoreText.setString(std::to_string(playerSprite.getCenter().y));
+void Game::UpdateHealthTexts() {
+	playerHealthText.setString(std::to_string(healthManager->GetPlayerHealth()));
+	opponentHealthText.setString(std::to_string(healthManager->GetOpponentHealth()));
 	return;
 }
