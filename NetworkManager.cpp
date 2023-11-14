@@ -12,15 +12,14 @@ NetworkManager::~NetworkManager() {
 
 bool NetworkManager::Initialize() {
 	std::cout << "Initializing client " << serverIp << " " << serverPort << std::endl;
-
+	udpSocket.setBlocking(false);
 	TcpSocketStatus = tcpSocket.connect(serverIp, serverPort);
-
 	if (TcpSocketStatus != sf::Socket::Done) {
 		// error...
 		std::cout << "Error " << TcpSocketStatus;
 		return false;
 	} else {
-		std::cout << "Connected";
+		std::cout << "Connected\n";
 		return true;
 	}
 }
@@ -41,6 +40,37 @@ bool NetworkManager::WaitForGameStartResponse() {
 	} else {
 		return false;
 	}
+}
 
-	
+void NetworkManager::SendPositionData(PositionData data) {
+	std::cout << "\nData Sending: " << data.x << "  " << data.y;
+	sf::Packet packet;
+	packet << data.x << data.y;
+	//if (udpSocket.send(packet, serverIp, serverPort) != sf::Socket::Done) {
+	//	//std::cout << "\nError Sending";
+	//} else {
+	//	std::cout << "\nData Sent";
+	//}
+	udpSocket.send(packet, serverIp, serverPort);
+}
+
+NetworkManager::PositionData NetworkManager::GetPositionData() {
+	sf::Packet packet;
+	PositionData data;
+	data.x = data.y = 100000;
+
+	//if (udpSocket.receive(packet, serverIp, serverPort) != sf::Socket::Done) {
+	//	//std::cout << "\nError Recieving";
+	//	return data;
+	//} else {
+	//	std::cout << "\nData Received: ";
+	//	packet >> data.x >> data.y;
+	//	std::cout << data.x << "  " << data.y;
+	//	return data;
+	//}
+	udpSocket.receive(packet, serverIp, serverPort);
+	std::cout << "\nData Received: ";
+	packet >> data.x >> data.y;
+	std::cout << data.x << "  " << data.y;
+	return data;
 }

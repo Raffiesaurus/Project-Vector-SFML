@@ -47,8 +47,8 @@ public:
 	void CheckGameOver();
 
 	void SwitchToLobby();
-	void UpdateOpponentShipPosition(sf::Vector2f pos);
-	void UpdateOpponentBulletPosition(sf::Vector2f pos);
+	void UpdateOpponentShipPosition(float x, float y);
+	void UpdateOpponentBulletPosition(float x, float y);
 private:
 
 	enum GAME_PHASE {

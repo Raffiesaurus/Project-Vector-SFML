@@ -7,6 +7,10 @@
 class NetworkManager {
 
 public:
+	struct PositionData {
+		float x;
+		float y;
+	};
 
 	NetworkManager(std::string ip, int port);
 	~NetworkManager();
@@ -15,10 +19,14 @@ public:
 
 	bool WaitForGameStartResponse();
 
+	void SendPositionData(PositionData data);
+
+	PositionData GetPositionData();
+
 private:
 
-	std::string serverIp;
-	int serverPort;
+	sf::IpAddress serverIp;
+	unsigned short serverPort;
 
 	sf::TcpSocket tcpSocket;
 	sf::Socket::Status TcpSocketStatus;

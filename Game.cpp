@@ -109,6 +109,7 @@ void Game::InitializeScreen() {
 					sf::Vector2f clickPos = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
 					if (startButton.getGlobalBounds().contains(clickPos)) {
 						SwitchToLobby();
+						event.type = sf::Event::GainedFocus;
 					}
 					if (exitButton.getGlobalBounds().contains(clickPos)) {
 						window.close();
@@ -236,6 +237,7 @@ void Game::SwitchToLobby() {
 void Game::RenderingThread() {
 	window.setActive(true);
 	sf::Clock gameClock;
+	NetworkManager::PositionData data, oppPosData;
 	while (window.isOpen()) {
 		if (game_state == MENU) {
 			window.draw(startButton);
@@ -279,11 +281,18 @@ void Game::RenderingThread() {
 				window.draw(opponentBullet);
 			window.draw(playerSprite);
 			window.draw(opponentSprite);
+			data.x = playerSprite.getCenter().x;
+			data.y = playerSprite.getCenter().y;
+			networkManager->SendPositionData(data);
+			oppPosData = networkManager->GetPositionData();
+			if (!isnan(oppPosData.x) && !isnan(oppPosData.y)) {
+				if (oppPosData.x != 100000 && oppPosData.y != 100000) {
+					UpdateOpponentShipPosition(oppPosData.x, oppPosData.y);
+				}
+			}
 		}
 
 		else if (game_state == GAME_OVER) {
-
-
 
 		}
 
@@ -423,7 +432,7 @@ void Game::MouseButtonPressEventCheck(sf::Event::MouseButtonEvent mButton) {
 void Game::MouseButtonReleaseEventCheck(sf::Event::MouseButtonEvent mButton) {
 	if (mButton.button == sf::Mouse::Left) {
 		secondBulletPoint = sf::Vector2f(mButton.x, mButton.y);
-		FireBullet();
+		//FireBullet();
 	}
 	return;
 }
@@ -467,10 +476,10 @@ void Game::UpdateHealthTexts() {
 	return;
 }
 
-void Game::UpdateOpponentShipPosition(sf::Vector2f pos) {
-	opponentSprite.setCenter(pos);
+void Game::UpdateOpponentShipPosition(float x, float y) {
+	opponentSprite.setCenter(sf::Vector2f(x, y));
 }
 
-void Game::UpdateOpponentBulletPosition(sf::Vector2f pos) {
-	opponentBullet.setCenter(pos);
+void Game::UpdateOpponentBulletPosition(float x, float y) {
+	opponentBullet.setCenter(sf::Vector2f(x, y));
 }
