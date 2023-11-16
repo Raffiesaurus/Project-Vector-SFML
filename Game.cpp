@@ -35,6 +35,7 @@ Game::Game(std::string ip, int port) {
 Game::~Game() {}
 
 void Game::InitializeGame() {
+	srand(time(0));
 	sf::Context context;
 	std::cout << "Initialising game..." << std::endl;
 	SetupMenuScreen();
@@ -237,6 +238,7 @@ void Game::SwitchToLobby() {
 void Game::RenderingThread() {
 	window.setActive(true);
 	sf::Clock gameClock;
+	Time lastMessageSentTime, lastMessageReceivedTime = sf::seconds(0);
 	NetworkManager::PositionData data, oppPosData;
 	while (window.isOpen()) {
 		if (game_state == MENU) {
@@ -281,15 +283,18 @@ void Game::RenderingThread() {
 				window.draw(opponentBullet);
 			window.draw(playerSprite);
 			window.draw(opponentSprite);
-			data.x = playerSprite.getCenter().x;
-			data.y = playerSprite.getCenter().y;
-			networkManager->SendPositionData(data);
-			oppPosData = networkManager->GetPositionData();
+			if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds((rand() % (8 - 5 + 1)) + 5)) {
+				lastMessageSentTime = gameClock.getElapsedTime();
+				data.x = playerSprite.getCenter().x;
+				data.y = playerSprite.getCenter().y;
+				networkManager->SendPositionData(data);
+			}
+			/*oppPosData = networkManager->GetPositionData();
 			if (!isnan(oppPosData.x) && !isnan(oppPosData.y)) {
 				if (oppPosData.x != 100000 && oppPosData.y != 100000) {
 					UpdateOpponentShipPosition(oppPosData.x, oppPosData.y);
 				}
-			}
+			}*/
 		}
 
 		else if (game_state == GAME_OVER) {

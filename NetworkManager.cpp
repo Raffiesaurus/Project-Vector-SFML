@@ -20,6 +20,13 @@ bool NetworkManager::Initialize() {
 		return false;
 	} else {
 		std::cout << "Connected\n";
+		if (udpSocket.bind(tcpSocket.getLocalPort()) != sf::Socket::Done) {
+			std::cerr << "Error binding UDP socket to port " << tcpSocket.getLocalPort() << std::endl;
+			return 1;
+		} else {
+			std::cout << "UDP Listening with port " << tcpSocket.getLocalPort() << std::endl;
+		}
+		std::cout << "\nMy ports : " << tcpSocket.getLocalPort() << " " << udpSocket.getLocalPort() << " ";
 		return true;
 	}
 }
@@ -52,11 +59,12 @@ void NetworkManager::SendPositionData(PositionData data) {
 	//	std::cout << "\nData Sent";
 	//}
 	udpSocket.send(packet, serverIp, serverPort);
+	return;
 }
 
 NetworkManager::PositionData NetworkManager::GetPositionData() {
 	sf::Packet packet;
-	PositionData data;
+	PositionData data{};
 	data.x = data.y = 100000;
 
 	//if (udpSocket.receive(packet, serverIp, serverPort) != sf::Socket::Done) {
