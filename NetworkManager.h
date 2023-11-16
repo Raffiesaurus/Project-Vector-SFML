@@ -7,21 +7,24 @@
 class NetworkManager {
 
 public:
-	struct PositionData {
-		float x;
-		float y;
+	struct PacketData {
+		int playerNumber;
+		float spritePosX;
+		float spritePosY;
+		float bulletPosX;
+		float bulletPosY;
 	};
 
 	NetworkManager(std::string ip, int port);
 	~NetworkManager();
 
-	bool Initialize();
+	int Initialize();
 
 	bool WaitForGameStartResponse();
 
-	void SendPositionData(PositionData data);
+	void SendPositionData(PacketData data);
 
-	PositionData GetPositionData();
+	PacketData GetPositionData();
 
 private:
 

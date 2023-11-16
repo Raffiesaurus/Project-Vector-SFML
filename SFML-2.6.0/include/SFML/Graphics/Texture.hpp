@@ -275,7 +275,7 @@ public:
     /// \param y      Y offset in the texture where to copy the source pixels
     ///
     ////////////////////////////////////////////////////////////
-    void update(const Uint8* pixels, unsigned int width, unsigned int height, unsigned int x, unsigned int y);
+    void update(const Uint8* pixels, unsigned int width, unsigned int height, unsigned int spritePosX, unsigned int spritePosY);
 
     ////////////////////////////////////////////////////////////
     /// \brief Update a part of this texture from another texture
@@ -312,7 +312,7 @@ public:
     /// \param y       Y offset in this texture where to copy the source texture
     ///
     ////////////////////////////////////////////////////////////
-    void update(const Texture& texture, unsigned int x, unsigned int y);
+    void update(const Texture& texture, unsigned int spritePosX, unsigned int spritePosY);
 
     ////////////////////////////////////////////////////////////
     /// \brief Update the texture from an image
@@ -349,7 +349,7 @@ public:
     /// \param y     Y offset in the texture where to copy the source image
     ///
     ////////////////////////////////////////////////////////////
-    void update(const Image& image, unsigned int x, unsigned int y);
+    void update(const Image& image, unsigned int spritePosX, unsigned int spritePosY);
 
     ////////////////////////////////////////////////////////////
     /// \brief Update the texture from the contents of a window
@@ -386,7 +386,7 @@ public:
     /// \param y      Y offset in the texture where to copy the source window
     ///
     ////////////////////////////////////////////////////////////
-    void update(const Window& window, unsigned int x, unsigned int y);
+    void update(const Window& window, unsigned int spritePosX, unsigned int spritePosY);
 
     ////////////////////////////////////////////////////////////
     /// \brief Enable or disable the smooth filter

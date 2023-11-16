@@ -81,6 +81,8 @@ private:
 	float bulletSpeed;
 	int bulletDmg;
 
+	int playerNumber;
+
 	unsigned int deltaMs;
 
 	sf::RenderWindow window;
@@ -105,9 +107,11 @@ private:
 
 	sfp::PhysicsSprite playerSprite;
 	sfp::PhysicsSprite opponentSprite;
+	sfp::PhysicsSprite *controlledSprite;
 
 	sfp::PhysicsCircle playerBullet;
 	sfp::PhysicsCircle opponentBullet;
+	sfp::PhysicsCircle *controlledBullet;
 
 	sf::Sprite bgSprite;
 

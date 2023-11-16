@@ -294,7 +294,7 @@ public:
     /// \param x    Value of the float scalar
     ///
     ////////////////////////////////////////////////////////////
-    void setUniform(const std::string& name, float x);
+    void setUniform(const std::string& name, float spritePosX);
 
     ////////////////////////////////////////////////////////////
     /// \brief Specify value for \p vec2 uniform
@@ -339,7 +339,7 @@ public:
     /// \param x    Value of the int scalar
     ///
     ////////////////////////////////////////////////////////////
-    void setUniform(const std::string& name, int x);
+    void setUniform(const std::string& name, int spritePosX);
 
     ////////////////////////////////////////////////////////////
     /// \brief Specify value for \p ivec2 uniform
@@ -383,7 +383,7 @@ public:
     /// \param x    Value of the bool scalar
     ///
     ////////////////////////////////////////////////////////////
-    void setUniform(const std::string& name, bool x);
+    void setUniform(const std::string& name, bool spritePosX);
 
     ////////////////////////////////////////////////////////////
     /// \brief Specify value for \p bvec2 uniform
@@ -551,7 +551,7 @@ public:
     /// \deprecated Use setUniform(const std::string&, float) instead.
     ///
     ////////////////////////////////////////////////////////////
-    SFML_DEPRECATED void setParameter(const std::string& name, float x);
+    SFML_DEPRECATED void setParameter(const std::string& name, float spritePosX);
 
     ////////////////////////////////////////////////////////////
     /// \brief Change a 2-components vector parameter of the shader
@@ -559,7 +559,7 @@ public:
     /// \deprecated Use setUniform(const std::string&, const Glsl::Vec2&) instead.
     ///
     ////////////////////////////////////////////////////////////
-    SFML_DEPRECATED void setParameter(const std::string& name, float x, float y);
+    SFML_DEPRECATED void setParameter(const std::string& name, float spritePosX, float spritePosY);
 
     ////////////////////////////////////////////////////////////
     /// \brief Change a 3-components vector parameter of the shader
@@ -567,7 +567,7 @@ public:
     /// \deprecated Use setUniform(const std::string&, const Glsl::Vec3&) instead.
     ///
     ////////////////////////////////////////////////////////////
-    SFML_DEPRECATED void setParameter(const std::string& name, float x, float y, float z);
+    SFML_DEPRECATED void setParameter(const std::string& name, float spritePosX, float spritePosY, float z);
 
     ////////////////////////////////////////////////////////////
     /// \brief Change a 4-components vector parameter of the shader
@@ -575,7 +575,7 @@ public:
     /// \deprecated Use setUniform(const std::string&, const Glsl::Vec4&) instead.
     ///
     ////////////////////////////////////////////////////////////
-    SFML_DEPRECATED void setParameter(const std::string& name, float x, float y, float z, float w);
+    SFML_DEPRECATED void setParameter(const std::string& name, float spritePosX, float spritePosY, float z, float w);
 
     ////////////////////////////////////////////////////////////
     /// \brief Change a 2-components vector parameter of the shader

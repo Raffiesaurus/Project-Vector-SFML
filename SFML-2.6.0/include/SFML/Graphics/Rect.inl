@@ -50,10 +50,10 @@ height(rectHeight)
 ////////////////////////////////////////////////////////////
 template <typename T>
 Rect<T>::Rect(const Vector2<T>& position, const Vector2<T>& size) :
-left  (position.x),
-top   (position.y),
-width (size.x),
-height(size.y)
+left  (position.spritePosX),
+top   (position.spritePosY),
+width (size.spritePosX),
+height(size.spritePosY)
 {
 
 }
@@ -73,7 +73,7 @@ height(static_cast<T>(rectangle.height))
 
 ////////////////////////////////////////////////////////////
 template <typename T>
-bool Rect<T>::contains(T x, T y) const
+bool Rect<T>::contains(T spritePosX, T spritePosY) const
 {
     // Rectangles with negative dimensions are allowed, so we must handle them correctly
 
@@ -83,7 +83,7 @@ bool Rect<T>::contains(T x, T y) const
     T minY = std::min(top, static_cast<T>(top + height));
     T maxY = std::max(top, static_cast<T>(top + height));
 
-    return (x >= minX) && (x < maxX) && (y >= minY) && (y < maxY);
+    return (spritePosX >= minX) && (spritePosX < maxX) && (spritePosY >= minY) && (spritePosY < maxY);
 }
 
 
@@ -91,7 +91,7 @@ bool Rect<T>::contains(T x, T y) const
 template <typename T>
 bool Rect<T>::contains(const Vector2<T>& point) const
 {
-    return contains(point.x, point.y);
+    return contains(point.spritePosX, point.spritePosY);
 }
 
 

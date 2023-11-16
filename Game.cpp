@@ -19,6 +19,8 @@ Game::Game(std::string ip, int port) {
 	bulletSpeed = 25.0f;
 	bulletDmg = 20;
 
+	playerNumber = 1;
+
 	playerPos = sf::Vector2f(0, 0);
 	lastMousePos = sf::Vector2f(0, 0);
 	firstBulletPoint = sf::Vector2f(0, 0);
@@ -107,7 +109,7 @@ void Game::InitializeScreen() {
 				if (event.type == sf::Event::Closed) { window.close(); }
 				if (event.type == sf::Event::MouseButtonPressed) {
 					MouseButtonPressEventCheck(event.mouseButton);
-					sf::Vector2f clickPos = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
+					sf::Vector2f clickPos = sf::Vector2f(event.mouseButton.spritePosX, event.mouseButton.spritePosY);
 					if (startButton.getGlobalBounds().contains(clickPos)) {
 						SwitchToLobby();
 						event.type = sf::Event::GainedFocus;
@@ -200,7 +202,6 @@ void Game::InitializePlayers() {
 	} else {
 		opponentSprite.setTexture(opponentTexture);
 		opponentSprite.setOrigin(40, 40);
-		opponentSprite.setRotation(180);
 		opponentSprite.setCenter(sf::Vector2f(440, 180));
 		opponentSprite.setSize(sf::Vector2f(80, 80));
 		world->AddPhysicsBody(opponentSprite);
@@ -221,8 +222,12 @@ void Game::InitializePlayers() {
 
 void Game::SwitchToLobby() {
 	game_state = MID_LOBBY;
-	bool status = networkManager->Initialize();
-	if (status) {
+	int status = networkManager->Initialize();
+	if (status != -1) {
+		playerNumber = status;
+		controlledSprite = playerNumber == 1 ? &playerSprite : &opponentSprite;
+		controlledBullet = playerNumber == 1 ? &playerBullet : &opponentBullet;
+		std::cout << "I am player : " << playerNumber << std::endl;
 		game_state = LOBBY;
 		bool gameStartStaus = networkManager->WaitForGameStartResponse();
 		if (gameStartStaus) {
@@ -239,7 +244,7 @@ void Game::RenderingThread() {
 	window.setActive(true);
 	sf::Clock gameClock;
 	Time lastMessageSentTime, lastMessageReceivedTime = sf::seconds(0);
-	NetworkManager::PositionData data, oppPosData;
+	NetworkManager::PacketData data, oppPosData;
 	while (window.isOpen()) {
 		if (game_state == MENU) {
 			window.draw(startButton);
@@ -283,18 +288,21 @@ void Game::RenderingThread() {
 				window.draw(opponentBullet);
 			window.draw(playerSprite);
 			window.draw(opponentSprite);
-			if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds((rand() % (8 - 5 + 1)) + 5)) {
+			if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(1)) {
 				lastMessageSentTime = gameClock.getElapsedTime();
-				data.x = playerSprite.getCenter().x;
-				data.y = playerSprite.getCenter().y;
+				data.playerNumber = playerNumber;
+				data.bulletPosX = 0;
+				data.bulletPosY = 0;
+				data.spritePosX = controlledSprite->getCenter().spritePosX;
+				data.spritePosY = controlledSprite->getCenter().spritePosY;
 				networkManager->SendPositionData(data);
+				oppPosData = networkManager->GetPositionData();
 			}
-			/*oppPosData = networkManager->GetPositionData();
-			if (!isnan(oppPosData.x) && !isnan(oppPosData.y)) {
-				if (oppPosData.x != 100000 && oppPosData.y != 100000) {
-					UpdateOpponentShipPosition(oppPosData.x, oppPosData.y);
-				}
-			}*/
+			//if (!isnan(oppPosData.spritePosX) && !isnan(oppPosData.spritePosY)) {
+			//	if (oppPosData.spritePosX != 100000 && oppPosData.spritePosY != 100000) {
+			//		//UpdateOpponentShipPosition(oppPosData.spritePosX, oppPosData.spritePosY);
+			//	}
+			//}
 		}
 
 		else if (game_state == GAME_OVER) {
@@ -315,15 +323,15 @@ void Game::CheckBallCollision() {
 		if (playerBullet.collideWith(opponentSprite).hasCollided) {
 			playerBullet.setStatic(true);
 			sf::Vector2f playerPosition = playerSprite.getCenter();
-			playerPosition.x -= 40;
-			playerPosition.y -= 40;
+			playerPosition.spritePosX -= 40;
+			playerPosition.spritePosY -= 40;
 			playerBullet.setCenter(playerPosition);
 			healthManager->UpdateHealth(false, bulletDmg);
-		} else if (playerBullet.getCenter().y < 0 || playerBullet.getCenter().y > 1000 || playerBullet.getCenter().x < -50 || playerBullet.getCenter().x > 550) {
+		} else if (playerBullet.getCenter().spritePosY < 0 || playerBullet.getCenter().spritePosY > 1000 || playerBullet.getCenter().spritePosX < -50 || playerBullet.getCenter().spritePosX > 550) {
 			playerBullet.setStatic(true);
 			sf::Vector2f playerPosition = playerSprite.getCenter();
-			playerPosition.x -= 40;
-			playerPosition.y -= 40;
+			playerPosition.spritePosX -= 40;
+			playerPosition.spritePosY -= 40;
 			playerBullet.setCenter(playerPosition);
 		}
 	}
@@ -332,8 +340,8 @@ void Game::CheckBallCollision() {
 		if (opponentBullet.collideWith(opponentSprite).hasCollided) {
 			opponentBullet.setStatic(true);
 			sf::Vector2f opponenetPosition = opponentSprite.getCenter();
-			opponenetPosition.x -= 40;
-			opponenetPosition.y -= 40;
+			opponenetPosition.spritePosX -= 40;
+			opponenetPosition.spritePosY -= 40;
 			opponentBullet.setCenter(opponenetPosition);
 			healthManager->UpdateHealth(true, bulletDmg);
 		}
@@ -403,32 +411,32 @@ void Game::KeyboardReleaseEventCheck(sf::Event::KeyEvent key) {
 void Game::UpdatePlayerMovement() {
 	float offsetX = 0.0f;
 	float offsetY = 0.0f;
-	sf::Vector2f playerPos = playerSprite.getCenter();
+	sf::Vector2f playerPos = controlledSprite->getCenter();
 
-	if (isLeftPressed && (playerPos.x - 40) > 40) { offsetX = -playerMoveSpeed; }
+	if (isLeftPressed && (playerPos.spritePosX - 40) > 40) { offsetX = -playerMoveSpeed; }
 
-	if (isRightPressed && (playerPos.x + 40) < 560) { offsetX = playerMoveSpeed; }
+	if (isRightPressed && (playerPos.spritePosX + 40) < 560) { offsetX = playerMoveSpeed; }
 
-	if (isUpPressed && (playerPos.y - 80) > 0) { offsetY = -playerMoveSpeed; }
+	if (isUpPressed && (playerPos.spritePosY - 80) > 0) { offsetY = -playerMoveSpeed; }
 
-	if (isDownPressed && (playerPos.y - 40) < 860) { offsetY = playerMoveSpeed; }
+	if (isDownPressed && (playerPos.spritePosY - 40) < 860) { offsetY = playerMoveSpeed; }
 
 	if ((isLeftPressed && isRightPressed) || (!isLeftPressed && !isRightPressed)) { offsetX = 0.0f; }
 
 	if ((isUpPressed && isDownPressed) || (!isUpPressed && !isDownPressed)) { offsetY = 0.0f; }
 
-	if (offsetX != 0.0f || offsetY != 0.0f) { playerSprite.move(sf::Vector2f(offsetX, offsetY)); }
+	if (offsetX != 0.0f || offsetY != 0.0f) { controlledSprite->move(sf::Vector2f(offsetX, offsetY)); }
 	return;
 }
 
 void Game::MouseMoveEventCheck(sf::Event::MouseMoveEvent mouse) {
-	lastMousePos = sf::Vector2f(mouse.x, mouse.y);
+	lastMousePos = sf::Vector2f(mouse.spritePosX, mouse.spritePosY);
 	return;
 }
 
 void Game::MouseButtonPressEventCheck(sf::Event::MouseButtonEvent mButton) {
 	if (mButton.button == sf::Mouse::Left) {
-		firstBulletPoint = sf::Vector2f(mButton.x, mButton.y);
+		firstBulletPoint = sf::Vector2f(mButton.spritePosX, mButton.spritePosY);
 	}
 
 	return;
@@ -436,42 +444,42 @@ void Game::MouseButtonPressEventCheck(sf::Event::MouseButtonEvent mButton) {
 
 void Game::MouseButtonReleaseEventCheck(sf::Event::MouseButtonEvent mButton) {
 	if (mButton.button == sf::Mouse::Left) {
-		secondBulletPoint = sf::Vector2f(mButton.x, mButton.y);
+		secondBulletPoint = sf::Vector2f(mButton.spritePosX, mButton.spritePosY);
 		//FireBullet();
 	}
 	return;
 }
 
 void Game::FireBullet() {
-	if (isGameOver || !playerBullet.getStatic()) {
+	if (isGameOver || !controlledBullet->getStatic()) {
 		return;
 	}
-	sf::Vector2f playerPosition = playerSprite.getCenter();
-	playerPosition.x -= 40;
-	playerPosition.y -= 40;
+	sf::Vector2f playerPosition = controlledSprite->getCenter();
+	playerPosition.spritePosX -= 40;
+	playerPosition.spritePosY -= 40;
 
-	sf::Vector2f dirVector = sf::Vector2f((firstBulletPoint.x - playerPosition.x),
-		(firstBulletPoint.y - playerPosition.y));
-	double len = sqrt(pow(dirVector.x, 2) + pow(dirVector.y, 2));
-	dirVector.x *= bulletSpeed / len;
-	dirVector.y *= bulletSpeed / len;
+	sf::Vector2f dirVector = sf::Vector2f((firstBulletPoint.spritePosX - playerPosition.spritePosX),
+		(firstBulletPoint.spritePosY - playerPosition.spritePosY));
+	double len = sqrt(pow(dirVector.spritePosX, 2) + pow(dirVector.spritePosY, 2));
+	dirVector.spritePosX *= bulletSpeed / len;
+	dirVector.spritePosY *= bulletSpeed / len;
 
 
-	sf::Vector2f startPoint = sf::Vector2f((playerPosition.x + dirVector.x * 0.1), (playerPosition.y + dirVector.y * 0.1));
+	sf::Vector2f startPoint = sf::Vector2f((playerPosition.spritePosX + dirVector.spritePosX * 0.1), (playerPosition.spritePosY + dirVector.spritePosY * 0.1));
 
-	playerBullet.setCenter(startPoint);
-	playerBullet.setStatic(false);
-	playerBullet.setVelocity(dirVector);
+	controlledBullet->setCenter(startPoint);
+	controlledBullet->setStatic(false);
+	controlledBullet->setVelocity(dirVector);
 	return;
 }
 
 void Game::UpdatePlayerRotation() {
-	playerPos = playerSprite.getCenter();
-	playerPos.x -= 40;
-	playerPos.y -= 40;
-	double angle = std::atan2((lastMousePos.y - playerPos.y), (lastMousePos.x - playerPos.x));
+	playerPos = controlledSprite->getCenter();
+	playerPos.spritePosX -= 40;
+	playerPos.spritePosY -= 40;
+	double angle = std::atan2((lastMousePos.spritePosY - playerPos.spritePosY), (lastMousePos.spritePosX - playerPos.spritePosX));
 	angle = (angle * 180 / PI) + 90;
-	playerSprite.setRotation(angle);
+	controlledSprite->setRotation(angle);
 	return;
 }
 
@@ -481,10 +489,10 @@ void Game::UpdateHealthTexts() {
 	return;
 }
 
-void Game::UpdateOpponentShipPosition(float x, float y) {
-	opponentSprite.setCenter(sf::Vector2f(x, y));
+void Game::UpdateOpponentShipPosition(float spritePosX, float spritePosY) {
+	opponentSprite.setCenter(sf::Vector2f(spritePosX, spritePosY));
 }
 
-void Game::UpdateOpponentBulletPosition(float x, float y) {
-	opponentBullet.setCenter(sf::Vector2f(x, y));
+void Game::UpdateOpponentBulletPosition(float spritePosX, float spritePosY) {
+	opponentBullet.setCenter(sf::Vector2f(spritePosX, spritePosY));
 }

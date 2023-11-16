@@ -234,7 +234,7 @@ public:
     /// \see getPixel
     ///
     ////////////////////////////////////////////////////////////
-    void setPixel(unsigned int x, unsigned int y, const Color& color);
+    void setPixel(unsigned int spritePosX, unsigned int spritePosY, const Color& color);
 
     ////////////////////////////////////////////////////////////
     /// \brief Get the color of a pixel
@@ -251,7 +251,7 @@ public:
     /// \see setPixel
     ///
     ////////////////////////////////////////////////////////////
-    Color getPixel(unsigned int x, unsigned int y) const;
+    Color getPixel(unsigned int spritePosX, unsigned int spritePosY) const;
 
     ////////////////////////////////////////////////////////////
     /// \brief Get a read-only pointer to the array of pixels

@@ -112,7 +112,7 @@ public:
     /// \return Transformed point
     ///
     ////////////////////////////////////////////////////////////
-    Vector2f transformPoint(float x, float y) const;
+    Vector2f transformPoint(float spritePosX, float spritePosY) const;
 
     ////////////////////////////////////////////////////////////
     /// \brief Transform a 2D point
@@ -184,7 +184,7 @@ public:
     /// \see rotate, scale
     ///
     ////////////////////////////////////////////////////////////
-    Transform& translate(float x, float y);
+    Transform& translate(float spritePosX, float spritePosY);
 
     ////////////////////////////////////////////////////////////
     /// \brief Combine the current transform with a translation

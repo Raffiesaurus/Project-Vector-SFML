@@ -96,8 +96,8 @@ struct Vector4
     ///
     ////////////////////////////////////////////////////////////
     Vector4() :
-    x(0),
-    y(0),
+    spritePosX(0),
+    spritePosY(0),
     z(0),
     w(0)
     {
@@ -113,8 +113,8 @@ struct Vector4
     ///
     ////////////////////////////////////////////////////////////
     Vector4(T X, T Y, T Z, T W) :
-    x(X),
-    y(Y),
+    spritePosX(X),
+    spritePosY(Y),
     z(Z),
     w(W)
     {
@@ -128,8 +128,8 @@ struct Vector4
     ////////////////////////////////////////////////////////////
     template <typename U>
     explicit Vector4(const Vector4<U>& other) :
-    x(static_cast<T>(other.x)),
-    y(static_cast<T>(other.y)),
+    spritePosX(static_cast<T>(other.spritePosX)),
+    spritePosY(static_cast<T>(other.spritePosY)),
     z(static_cast<T>(other.z)),
     w(static_cast<T>(other.w))
     {
@@ -148,8 +148,8 @@ struct Vector4
         copyVector(color, *this);
     }
 
-    T x; //!< 1st component (X) of the 4D vector
-    T y; //!< 2nd component (Y) of the 4D vector
+    T spritePosX; //!< 1st component (X) of the 4D vector
+    T spritePosY; //!< 2nd component (Y) of the 4D vector
     T z; //!< 3rd component (Z) of the 4D vector
     T w; //!< 4th component (W) of the 4D vector
 };

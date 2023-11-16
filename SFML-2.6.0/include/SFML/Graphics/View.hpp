@@ -78,7 +78,7 @@ public:
     /// \see setSize, getCenter
     ///
     ////////////////////////////////////////////////////////////
-    void setCenter(float x, float y);
+    void setCenter(float spritePosX, float spritePosY);
 
     ////////////////////////////////////////////////////////////
     /// \brief Set the center of the view

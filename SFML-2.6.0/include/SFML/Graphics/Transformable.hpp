@@ -67,7 +67,7 @@ public:
     /// \see move, getPosition
     ///
     ////////////////////////////////////////////////////////////
-    void setPosition(float x, float y);
+    void setPosition(float spritePosX, float spritePosY);
 
     ////////////////////////////////////////////////////////////
     /// \brief set the position of the object
@@ -142,7 +142,7 @@ public:
     /// \see getOrigin
     ///
     ////////////////////////////////////////////////////////////
-    void setOrigin(float x, float y);
+    void setOrigin(float spritePosX, float spritePosY);
 
     ////////////////////////////////////////////////////////////
     /// \brief set the local origin of the object

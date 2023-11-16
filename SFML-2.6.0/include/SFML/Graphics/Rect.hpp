@@ -106,7 +106,7 @@ public:
     /// \see intersects
     ///
     ////////////////////////////////////////////////////////////
-    bool contains(T x, T y) const;
+    bool contains(T spritePosX, T spritePosY) const;
 
     ////////////////////////////////////////////////////////////
     /// \brief Check if a point is inside the rectangle's area
