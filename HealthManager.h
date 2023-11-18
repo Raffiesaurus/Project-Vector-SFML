@@ -7,6 +7,8 @@ public:
 
 	void UpdateHealth(bool player, int increaseVal);
 
+	void SetHealth(bool player, float hp);
+
 	int GetPlayerHealth();
 
 	int GetOpponentHealth();

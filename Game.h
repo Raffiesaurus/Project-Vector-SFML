@@ -47,8 +47,12 @@ public:
 	void CheckGameOver();
 
 	void SwitchToLobby();
-	void UpdateOpponentShipPosition(float x, float y);
-	void UpdateOpponentBulletPosition(float x, float y);
+
+	void UpdateOtherShipPosition(float x, float y);
+	void UpdateOtherBulletPosition(float x, float y);
+	void UpdateOtherShipRotation(float angle);
+	void UpdateOtherShipHealth(float hp);
+
 private:
 
 	enum GAME_PHASE {
@@ -80,7 +84,7 @@ private:
 	float playerMoveSpeed;
 	float bulletSpeed;
 	int bulletDmg;
-
+	int shotCount;
 	int playerNumber;
 
 	unsigned int deltaMs;
@@ -104,14 +108,9 @@ private:
 	sf::RectangleShape startButton;
 	sf::RectangleShape exitButton;
 
+	sfp::PhysicsSprite shipSprites[2];
 
-	sfp::PhysicsSprite playerSprite;
-	sfp::PhysicsSprite opponentSprite;
-	sfp::PhysicsSprite *controlledSprite;
-
-	sfp::PhysicsCircle playerBullet;
-	sfp::PhysicsCircle opponentBullet;
-	sfp::PhysicsCircle *controlledBullet;
+	sfp::PhysicsCircle bulletCircles[2];
 
 	sf::Sprite bgSprite;
 
@@ -124,4 +123,3 @@ private:
 
 	sfp::World* world;
 };
-

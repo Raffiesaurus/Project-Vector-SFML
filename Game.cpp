@@ -30,7 +30,7 @@ Game::Game(std::string ip, int port) {
 	world = new sfp::World(sf::Vector2f(0, 0));
 	networkManager = std::make_unique<NetworkManager>(ip, port);
 	healthManager = std::make_unique<HealthManager>();
-
+	shotCount = 0;
 	game_state = MENU;
 }
 
@@ -45,7 +45,6 @@ void Game::InitializeGame() {
 	SetupGameScreen();
 	InitializePlayers();
 	InitializeScreen();
-	Update();
 }
 
 void Game::SetupMenuScreen() {
@@ -190,44 +189,40 @@ void Game::InitializePlayers() {
 	if (!playerTexture.loadFromFile("assets/Sprites/Characters/player-ship.png")) {
 		LoadError("Player Texture");
 	} else {
-		playerSprite.setTexture(playerTexture);
-		playerSprite.setOrigin(40, 40);
-		playerSprite.setCenter(Vector2f(80, 890));
-		playerSprite.setSize(sf::Vector2f(80, 80));
-		world->AddPhysicsBody(playerSprite);
+		shipSprites[0].setTexture(playerTexture);
+		shipSprites[0].setOrigin(40, 40);
+		shipSprites[0].setCenter(Vector2f(80, 890));
+		shipSprites[0].setSize(sf::Vector2f(80, 80));
+		world->AddPhysicsBody(shipSprites[0]);
 	}
 
 	if (!opponentTexture.loadFromFile("assets/Sprites/Characters/enemy-ship.png")) {
 		LoadError("Enemy Texture");
 	} else {
-		opponentSprite.setTexture(opponentTexture);
-		opponentSprite.setOrigin(40, 40);
-		opponentSprite.setCenter(sf::Vector2f(440, 180));
-		opponentSprite.setSize(sf::Vector2f(80, 80));
-		world->AddPhysicsBody(opponentSprite);
+		shipSprites[1].setTexture(opponentTexture);
+		shipSprites[1].setOrigin(40, 40);
+		shipSprites[1].setCenter(sf::Vector2f(440, 180));
+		shipSprites[1].setSize(sf::Vector2f(80, 80));
+		world->AddPhysicsBody(shipSprites[1]);
 	}
 
-	playerBullet.setStatic(true);
-	playerBullet.setSize(Vector2f(10, 10));
-	playerBullet.setCenter(sf::Vector2f(1000, 1000));
-	world->AddPhysicsBody(playerBullet);
+	bulletCircles[0].setSize(Vector2f(10, 10));
+	bulletCircles[0].setCenter(sf::Vector2f(10000, 10000));
+	world->AddPhysicsBody(bulletCircles[0]);
 
-	opponentBullet.setStatic(true);
-	opponentBullet.setSize(Vector2f(10, 10));
-	opponentBullet.setCenter(sf::Vector2f(1000, 1000));
-	world->AddPhysicsBody(opponentBullet);
+	bulletCircles[1].setSize(Vector2f(10, 10));
+	bulletCircles[1].setCenter(sf::Vector2f(10000, 10000));
+	world->AddPhysicsBody(bulletCircles[1]);
 
 	return;
 }
 
 void Game::SwitchToLobby() {
 	game_state = MID_LOBBY;
-	int status = networkManager->Initialize();
+	int status = networkManager->Initialize(healthManager->GetPlayerHealth());
 	if (status != -1) {
 		playerNumber = status;
-		controlledSprite = playerNumber == 1 ? &playerSprite : &opponentSprite;
-		controlledBullet = playerNumber == 1 ? &playerBullet : &opponentBullet;
-		std::cout << "I am player : " << playerNumber << std::endl;
+		std::cout << "I am player : " << playerNumber + 1 << std::endl;
 		game_state = LOBBY;
 		bool gameStartStaus = networkManager->WaitForGameStartResponse();
 		if (gameStartStaus) {
@@ -244,7 +239,7 @@ void Game::RenderingThread() {
 	window.setActive(true);
 	sf::Clock gameClock;
 	Time lastMessageSentTime, lastMessageReceivedTime = sf::seconds(0);
-	NetworkManager::PacketData data, oppPosData;
+	NetworkManager::PacketData data, serverData;
 	while (window.isOpen()) {
 		if (game_state == MENU) {
 			window.draw(startButton);
@@ -272,7 +267,7 @@ void Game::RenderingThread() {
 				window.clear();
 				done = true;
 			}
-			if (!isGameOver) {
+			if (!isGameOver && gameClock.getElapsedTime() > sf::seconds(1)) {
 				CheckBallCollision();
 				UpdateHealthTexts();
 				CheckGameOver();
@@ -282,26 +277,31 @@ void Game::RenderingThread() {
 			window.draw(bgSprite);
 			window.draw(playerHealthText);
 			window.draw(opponentHealthText);
-			if (!playerBullet.getStatic())
-				window.draw(playerBullet);
-			if (!opponentBullet.getStatic())
-				window.draw(opponentBullet);
-			window.draw(playerSprite);
-			window.draw(opponentSprite);
-			if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(1)) {
-				lastMessageSentTime = gameClock.getElapsedTime();
-				data.playerNumber = playerNumber;
-				data.bulletPosX = 0;
-				data.bulletPosY = 0;
-				data.spritePosX = controlledSprite->getCenter().spritePosX;
-				data.spritePosY = controlledSprite->getCenter().spritePosY;
-				networkManager->SendPositionData(data);
-				oppPosData = networkManager->GetPositionData();
+			window.draw(bulletCircles[0]);
+			window.draw(bulletCircles[1]);
+			window.draw(shipSprites[0]);
+			window.draw(shipSprites[1]);
+			//if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(0)) {
+			lastMessageSentTime = gameClock.getElapsedTime();
+
+
+			data.playerNumber = playerNumber;
+			data.bulletPosX = bulletCircles[playerNumber].getCenter().spritePosX;
+			data.bulletPosY = bulletCircles[playerNumber].getCenter().spritePosY;
+			data.spritePosX = shipSprites[playerNumber].getCenter().spritePosX;
+			data.spritePosY = shipSprites[playerNumber].getCenter().spritePosY;
+			data.rotationAngle = shipSprites[playerNumber].getRotation();
+			networkManager->SendData(data);
+
+
+			serverData = networkManager->GetData();
+			if (serverData.playerNumber != playerNumber) {
+				UpdateOtherShipPosition(serverData.spritePosX, serverData.spritePosY);
+				UpdateOtherBulletPosition(serverData.bulletPosX, serverData.bulletPosY);
+				UpdateOtherShipRotation(serverData.rotationAngle);
+				healthManager->SetHealth(true, serverData.mHealth);
+				healthManager->SetHealth(false, serverData.oHealth);
 			}
-			//if (!isnan(oppPosData.spritePosX) && !isnan(oppPosData.spritePosY)) {
-			//	if (oppPosData.spritePosX != 100000 && oppPosData.spritePosY != 100000) {
-			//		//UpdateOpponentShipPosition(oppPosData.spritePosX, oppPosData.spritePosY);
-			//	}
 			//}
 		}
 
@@ -319,32 +319,11 @@ void Game::Update() {
 }
 
 void Game::CheckBallCollision() {
-	if (!playerBullet.getStatic()) {
-		if (playerBullet.collideWith(opponentSprite).hasCollided) {
-			playerBullet.setStatic(true);
-			sf::Vector2f playerPosition = playerSprite.getCenter();
-			playerPosition.spritePosX -= 40;
-			playerPosition.spritePosY -= 40;
-			playerBullet.setCenter(playerPosition);
-			healthManager->UpdateHealth(false, bulletDmg);
-		} else if (playerBullet.getCenter().spritePosY < 0 || playerBullet.getCenter().spritePosY > 1000 || playerBullet.getCenter().spritePosX < -50 || playerBullet.getCenter().spritePosX > 550) {
-			playerBullet.setStatic(true);
-			sf::Vector2f playerPosition = playerSprite.getCenter();
-			playerPosition.spritePosX -= 40;
-			playerPosition.spritePosY -= 40;
-			playerBullet.setCenter(playerPosition);
-		}
-	}
-
-	if (!opponentBullet.getStatic()) {
-		if (opponentBullet.collideWith(opponentSprite).hasCollided) {
-			opponentBullet.setStatic(true);
-			sf::Vector2f opponenetPosition = opponentSprite.getCenter();
-			opponenetPosition.spritePosX -= 40;
-			opponenetPosition.spritePosY -= 40;
-			opponentBullet.setCenter(opponenetPosition);
-			healthManager->UpdateHealth(true, bulletDmg);
-		}
+	if (bulletCircles[playerNumber].collideWith(shipSprites[!playerNumber]).hasCollided) {
+		bulletCircles[playerNumber].setCenter(sf::Vector2f(10000, 10000));
+		networkManager->SendHitEvent();
+	} else if (bulletCircles[playerNumber].getCenter().spritePosY < 0 || bulletCircles[playerNumber].getCenter().spritePosY > 1000 || bulletCircles[playerNumber].getCenter().spritePosX < -50 || bulletCircles[playerNumber].getCenter().spritePosX > 550) {
+		bulletCircles[playerNumber].setCenter(sf::Vector2f(10000, 10000));
 	}
 
 	return;
@@ -411,7 +390,7 @@ void Game::KeyboardReleaseEventCheck(sf::Event::KeyEvent key) {
 void Game::UpdatePlayerMovement() {
 	float offsetX = 0.0f;
 	float offsetY = 0.0f;
-	sf::Vector2f playerPos = controlledSprite->getCenter();
+	sf::Vector2f playerPos = shipSprites[playerNumber].getCenter();
 
 	if (isLeftPressed && (playerPos.spritePosX - 40) > 40) { offsetX = -playerMoveSpeed; }
 
@@ -425,7 +404,7 @@ void Game::UpdatePlayerMovement() {
 
 	if ((isUpPressed && isDownPressed) || (!isUpPressed && !isDownPressed)) { offsetY = 0.0f; }
 
-	if (offsetX != 0.0f || offsetY != 0.0f) { controlledSprite->move(sf::Vector2f(offsetX, offsetY)); }
+	if (offsetX != 0.0f || offsetY != 0.0f) { shipSprites[playerNumber].move(sf::Vector2f(offsetX, offsetY)); }
 	return;
 }
 
@@ -445,16 +424,17 @@ void Game::MouseButtonPressEventCheck(sf::Event::MouseButtonEvent mButton) {
 void Game::MouseButtonReleaseEventCheck(sf::Event::MouseButtonEvent mButton) {
 	if (mButton.button == sf::Mouse::Left) {
 		secondBulletPoint = sf::Vector2f(mButton.spritePosX, mButton.spritePosY);
-		//FireBullet();
+		FireBullet();
 	}
 	return;
 }
 
 void Game::FireBullet() {
-	if (isGameOver || !controlledBullet->getStatic()) {
+	shotCount++;
+	if (isGameOver || shotCount < 1) {
 		return;
 	}
-	sf::Vector2f playerPosition = controlledSprite->getCenter();
+	sf::Vector2f playerPosition = shipSprites[playerNumber].getCenter();
 	playerPosition.spritePosX -= 40;
 	playerPosition.spritePosY -= 40;
 
@@ -464,22 +444,20 @@ void Game::FireBullet() {
 	dirVector.spritePosX *= bulletSpeed / len;
 	dirVector.spritePosY *= bulletSpeed / len;
 
+	sf::Vector2f startPoint = sf::Vector2f((playerPosition.spritePosX + dirVector.spritePosX * 0.3), (playerPosition.spritePosY + dirVector.spritePosY * 0.3));
 
-	sf::Vector2f startPoint = sf::Vector2f((playerPosition.spritePosX + dirVector.spritePosX * 0.1), (playerPosition.spritePosY + dirVector.spritePosY * 0.1));
-
-	controlledBullet->setCenter(startPoint);
-	controlledBullet->setStatic(false);
-	controlledBullet->setVelocity(dirVector);
+	bulletCircles[playerNumber].setCenter(startPoint);
+	bulletCircles[playerNumber].setVelocity(dirVector);
 	return;
 }
 
 void Game::UpdatePlayerRotation() {
-	playerPos = controlledSprite->getCenter();
+	playerPos = shipSprites[playerNumber].getCenter();
 	playerPos.spritePosX -= 40;
 	playerPos.spritePosY -= 40;
 	double angle = std::atan2((lastMousePos.spritePosY - playerPos.spritePosY), (lastMousePos.spritePosX - playerPos.spritePosX));
 	angle = (angle * 180 / PI) + 90;
-	controlledSprite->setRotation(angle);
+	shipSprites[playerNumber].setRotation(angle);
 	return;
 }
 
@@ -489,10 +467,19 @@ void Game::UpdateHealthTexts() {
 	return;
 }
 
-void Game::UpdateOpponentShipPosition(float spritePosX, float spritePosY) {
-	opponentSprite.setCenter(sf::Vector2f(spritePosX, spritePosY));
+void Game::UpdateOtherShipPosition(float spritePosX, float spritePosY) {
+	shipSprites[!playerNumber].setCenter(sf::Vector2f(spritePosX, spritePosY));
 }
 
-void Game::UpdateOpponentBulletPosition(float spritePosX, float spritePosY) {
-	opponentBullet.setCenter(sf::Vector2f(spritePosX, spritePosY));
+void Game::UpdateOtherBulletPosition(float spritePosX, float spritePosY) {
+	bulletCircles[!playerNumber].setCenter(sf::Vector2f(spritePosX, spritePosY));
+}
+
+void Game::UpdateOtherShipRotation(float angle) {
+	shipSprites[!playerNumber].setRotation(angle);
+}
+
+void Game::UpdateOtherShipHealth(float hp) {
+	if (hp >= 0)
+		healthManager->SetHealth(false, hp);
 }

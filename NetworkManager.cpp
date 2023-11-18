@@ -10,7 +10,19 @@ NetworkManager::~NetworkManager() {
 
 }
 
-int NetworkManager::Initialize() {
+//sf::Packet& operator <<(sf::Packet& packet, const NetworkManager::PacketData& data) {
+//	return packet << data.playerNumber << data.spritePosX << data.spritePosY << data.bulletPosX << data.bulletPosY << data.rotationAngle << data.health;
+//}
+//
+//sf::Packet& operator >>(sf::Packet& packet, NetworkManager::PacketData& data) {
+//	return packet >> data.playerNumber >> data.spritePosX >> data.spritePosY >> data.bulletPosX >> data.bulletPosY >> data.rotationAngle >> data.health;
+//}
+
+//std::ostream& operator<<(std::ostream& os, const NetworkManager::PacketData& data) {
+//	return os << data.playerNumber << " " << data.bulletPosX << " " << data.bulletPosY << " " << data.health << " " << data.rotationAngle << " " << data.spritePosX << " " << data.spritePosY << std::endl;
+//}
+
+int NetworkManager::Initialize(int hp) {
 	std::cout << "Initializing client " << serverIp << " " << serverPort << std::endl;
 	udpSocket.setBlocking(false);
 	TcpSocketStatus = tcpSocket.connect(serverIp, serverPort);
@@ -28,7 +40,11 @@ int NetworkManager::Initialize() {
 		} else {
 			std::cout << "UDP Listening with port " << tcpSocket.getLocalPort() << std::endl;
 		}
-
+		std::string hpVal = std::to_string(hp);
+		char const* hpData = hpVal.c_str();
+		if (tcpSocket.send(hpData, sizeof(float)) != sf::Socket::Done) {
+			std::cerr << "Error sending data to server." << std::endl;
+		}
 		if (tcpSocket.receive(data, 2, received) == sf::Socket::Done) {
 			std::cout << "Received " << received << " bytes" << " message: " << data << std::endl;
 			return std::stoi(data);
@@ -42,11 +58,9 @@ bool NetworkManager::WaitForGameStartResponse() {
 	char data[2];
 	std::size_t received;
 
-	// TCP socket:
 	if (tcpSocket.receive(data, 2, received) != sf::Socket::Done) {
 		// error...
 	}
-	std::cout << "Received " << received << " bytes" << " message: " << data << std::endl;
 	if (strcmp(data, "0") == 0) {
 		return true;
 	} else {
@@ -54,35 +68,28 @@ bool NetworkManager::WaitForGameStartResponse() {
 	}
 }
 
-void NetworkManager::SendPositionData(PacketData playerData) {
-	std::cout << "\nData sending: " << playerData.playerNumber << " " << playerData.spritePosX << " " << playerData.spritePosY << " " << playerData.bulletPosX << " " << playerData.bulletPosY;
+void NetworkManager::SendData(PacketData data) {
 	sf::Packet packet;
-	packet << playerData.playerNumber << playerData.spritePosX << playerData.spritePosY << playerData.bulletPosX << playerData.bulletPosY;
-	//if (udpSocket.send(packet, serverIp, serverPort) != sf::Socket::Done) {
-	//	//std::cout << "\nError Sending";
-	//} else {
-	//	std::cout << "\nData Sent";
-	//}
+	packet << data.playerNumber << data.spritePosX << data.spritePosY << data.bulletPosX << data.bulletPosY << data.rotationAngle;
 	udpSocket.send(packet, serverIp, serverPort);
 	return;
 }
 
-NetworkManager::PacketData NetworkManager::GetPositionData() {
+void NetworkManager::SendHitEvent() {
 	sf::Packet packet;
+	const char* hit = "Hit";
+	packet << hit;
+	udpSocket.send(packet, serverIp, serverPort);
+	return;
+}
 
-	//if (udpSocket.receive(packet, serverIp, serverPort) != sf::Socket::Done) {
-	//	//std::cout << "\nError Recieving";
-	//	return data;
-	//} else {
-	//	std::cout << "\nData Received: ";
-	//	packet >> data.x >> data.y;
-	//	std::cout << data.x << "  " << data.y;
-	//	return data;
-	//}
-	udpSocket.receive(packet, serverIp, serverPort);
-	PacketData playerData;
-	packet >> playerData.playerNumber >> playerData.spritePosX >> playerData.spritePosY >> playerData.bulletPosX >> playerData.bulletPosY;
-	std::cout << "\nData received from player: " << playerData.playerNumber << " " << playerData.spritePosX << " " << playerData.spritePosY << " " << playerData.bulletPosX << " " << playerData.bulletPosY;
-	
-	return playerData;
+NetworkManager::PacketData NetworkManager::GetData() {
+	sf::Packet packet;
+	sf::IpAddress ipAddr;
+	unsigned short port;
+	udpSocket.receive(packet, ipAddr, port);
+	PacketData data;
+	packet >> data.playerNumber >> data.spritePosX >> data.spritePosY >> data.bulletPosX >> data.bulletPosY >> data.rotationAngle >> data.mHealth >> data.oHealth;
+	std::cout << data.playerNumber << " " << data.bulletPosX << " " << data.bulletPosY << " " << data.mHealth << " " << data.rotationAngle << " " << data.spritePosX << " " << data.spritePosY << " " << data.oHealth << std::endl;
+	return data;
 }

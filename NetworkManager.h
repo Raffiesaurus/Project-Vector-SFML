@@ -13,18 +13,23 @@ public:
 		float spritePosY;
 		float bulletPosX;
 		float bulletPosY;
+		float rotationAngle;
+		int mHealth;
+		int oHealth;
 	};
 
 	NetworkManager(std::string ip, int port);
 	~NetworkManager();
 
-	int Initialize();
+	int Initialize(int hp);
 
 	bool WaitForGameStartResponse();
 
-	void SendPositionData(PacketData data);
+	void SendData(PacketData data);
 
-	PacketData GetPositionData();
+	void SendHitEvent();
+
+	PacketData GetData();
 
 private:
 
@@ -37,4 +42,3 @@ private:
 	sf::UdpSocket udpSocket;
 
 };
-
