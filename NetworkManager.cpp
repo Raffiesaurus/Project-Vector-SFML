@@ -3,11 +3,12 @@
 NetworkManager::NetworkManager(std::string ip, int port) {
 	serverIp = ip;
 	serverPort = port;
-	TcpSocketStatus = sf::Socket::Status::NotReady;
+	tcpSocketStatus = sf::Socket::Status::NotReady;
 }
 
 NetworkManager::~NetworkManager() {
-
+	tcpSocket.disconnect();
+	udpSocket.unbind();
 }
 
 //sf::Packet& operator <<(sf::Packet& packet, const NetworkManager::PacketData& data) {
@@ -25,9 +26,9 @@ NetworkManager::~NetworkManager() {
 int NetworkManager::Initialize(int hp) {
 	std::cout << "Initializing client " << serverIp << " " << serverPort << std::endl;
 	udpSocket.setBlocking(false);
-	TcpSocketStatus = tcpSocket.connect(serverIp, serverPort);
-	if (TcpSocketStatus != sf::Socket::Done) {
-		std::cout << "Error " << TcpSocketStatus;
+	tcpSocketStatus = tcpSocket.connect(serverIp, serverPort);
+	if (tcpSocketStatus != sf::Socket::Done) {
+		std::cout << "Error " << tcpSocketStatus;
 		return -1;
 	} else {
 		std::cout << "Connected\n";
@@ -90,6 +91,11 @@ NetworkManager::PacketData NetworkManager::GetData() {
 	udpSocket.receive(packet, ipAddr, port);
 	PacketData data;
 	packet >> data.playerNumber >> data.spritePosX >> data.spritePosY >> data.bulletPosX >> data.bulletPosY >> data.rotationAngle >> data.mHealth >> data.oHealth;
-	std::cout << data.playerNumber << " " << data.bulletPosX << " " << data.bulletPosY << " " << data.mHealth << " " << data.rotationAngle << " " << data.spritePosX << " " << data.spritePosY << " " << data.oHealth << std::endl;
 	return data;
+}
+
+void NetworkManager::OnReturnToLobby() {
+	tcpSocket.disconnect();
+	udpSocket.unbind();
+	tcpSocketStatus = sf::Socket::Status::NotReady;
 }

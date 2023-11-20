@@ -31,13 +31,15 @@ public:
 
 	PacketData GetData();
 
+	void OnReturnToLobby();
+
 private:
 
 	sf::IpAddress serverIp;
 	unsigned short serverPort;
 
 	sf::TcpSocket tcpSocket;
-	sf::Socket::Status TcpSocketStatus;
+	sf::Socket::Status tcpSocketStatus;
 
 	sf::UdpSocket udpSocket;
 

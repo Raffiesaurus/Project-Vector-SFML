@@ -43,6 +43,7 @@ void Game::InitializeGame() {
 	SetupMenuScreen();
 	SetupLobbyScreen();
 	SetupGameScreen();
+	SetupGameOverScreen();
 	InitializePlayers();
 	InitializeScreen();
 }
@@ -92,6 +93,29 @@ void Game::SetupLobbyScreen() {
 	waitingText.setPosition(sf::Vector2f(65.0f, 100.0f));
 }
 
+void Game::SetupGameOverScreen() {
+	menuText.setFont(font);
+	menuText.setString("MENU");
+	menuText.setCharacterSize(24);
+	menuText.setFillColor(sf::Color::White);
+	menuText.setOutlineColor(sf::Color::Black);
+	menuText.setOutlineThickness(1.5);
+	menuText.setPosition(sf::Vector2f(227.5f, 758.5f));
+
+	menuButton.setSize(sf::Vector2f(250, 50));
+	menuButton.setPosition(sf::Vector2f(140.0f, 750.f));
+	menuButton.setFillColor(sf::Color::Green);
+
+	gameResultText.setFont(font);
+	gameResultText.setString("N/A");
+	gameResultText.setCharacterSize(42);
+	gameResultText.setFillColor(sf::Color::White);
+	gameResultText.setOutlineColor(sf::Color::Red);
+	gameResultText.setOutlineThickness(1.5);
+	gameResultText.setPosition(sf::Vector2f(180.0f, 400.0f));
+
+}
+
 void Game::InitializeScreen() {
 	window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Project Vector");
 	window.setFramerateLimit(60);
@@ -107,7 +131,6 @@ void Game::InitializeScreen() {
 			while (window.pollEvent(event)) {
 				if (event.type == sf::Event::Closed) { window.close(); }
 				if (event.type == sf::Event::MouseButtonPressed) {
-					MouseButtonPressEventCheck(event.mouseButton);
 					sf::Vector2f clickPos = sf::Vector2f(event.mouseButton.spritePosX, event.mouseButton.spritePosY);
 					if (startButton.getGlobalBounds().contains(clickPos)) {
 						SwitchToLobby();
@@ -157,6 +180,16 @@ void Game::InitializeScreen() {
 
 			while (window.pollEvent(event)) {
 				if (event.type == sf::Event::Closed) { window.close(); }
+				if (event.type == sf::Event::MouseButtonPressed) {
+					sf::Vector2f clickPos = sf::Vector2f(event.mouseButton.spritePosX, event.mouseButton.spritePosY);
+					if (menuButton.getGlobalBounds().contains(clickPos)) {
+						SwitchToHome();
+						event.type = sf::Event::GainedFocus;
+					}
+					if (exitButton.getGlobalBounds().contains(clickPos)) {
+						window.close();
+					}
+				}
 			}
 
 		}
@@ -235,6 +268,11 @@ void Game::SwitchToLobby() {
 	}
 }
 
+void Game::SwitchToHome() {
+	networkManager->OnReturnToLobby();
+	game_state = MENU;
+}
+
 void Game::RenderingThread() {
 	window.setActive(true);
 	sf::Clock gameClock;
@@ -295,6 +333,7 @@ void Game::RenderingThread() {
 
 
 			serverData = networkManager->GetData();
+			std::cout << serverData.rotationAngle << std::endl;
 			if (serverData.playerNumber != playerNumber) {
 				UpdateOtherShipPosition(serverData.spritePosX, serverData.spritePosY);
 				UpdateOtherBulletPosition(serverData.bulletPosX, serverData.bulletPosY);
@@ -306,7 +345,11 @@ void Game::RenderingThread() {
 		}
 
 		else if (game_state == GAME_OVER) {
-
+			window.draw(menuButton);
+			window.draw(exitButton);
+			window.draw(menuText);
+			window.draw(exitText);
+			window.draw(gameResultText);
 		}
 
 		window.display();
@@ -331,15 +374,17 @@ void Game::CheckBallCollision() {
 
 void Game::CheckGameOver() {
 	if (healthManager->GetPlayerHealth() <= 0) {
-		std::cout << " CAN'T BELIEVE YOU'VE DONE THIS \n";
+		std::cout << " CAN'T BELIEVE YOU'VE LOST THIS \n";
 		isGameOver = true;
 		game_state = GAME_OVER;
+		gameResultText.setString("YOU LOST");
 	}
 
 	if (healthManager->GetOpponentHealth() <= 0) {
 		std::cout << " WINNER WINNER VEGAN DINNER \n";
 		isGameOver = true;
 		game_state = GAME_OVER;
+		gameResultText.setString("YOU WON");
 	}
 
 }

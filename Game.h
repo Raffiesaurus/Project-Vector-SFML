@@ -26,6 +26,7 @@ public:
 	void InitializePlayers();
 	void SetupMenuScreen();
 	void SetupLobbyScreen();
+	void SetupGameOverScreen();
 	void SetupGameScreen();
 	void RenderingThread();
 	void Update();
@@ -47,6 +48,8 @@ public:
 	void CheckGameOver();
 
 	void SwitchToLobby();
+
+	void SwitchToHome();
 
 	void UpdateOtherShipPosition(float x, float y);
 	void UpdateOtherBulletPosition(float x, float y);
@@ -95,11 +98,13 @@ private:
 
 	sf::Text gameName;
 	sf::Text startText;
+	sf::Text menuText;
 	sf::Text exitText;
 	sf::Text lobbyText;
 	sf::Text waitingText;
 	sf::Text playerHealthText;
 	sf::Text opponentHealthText;
+	sf::Text gameResultText;
 
 	sf::Texture playerTexture;
 	sf::Texture opponentTexture;
@@ -107,6 +112,7 @@ private:
 
 	sf::RectangleShape startButton;
 	sf::RectangleShape exitButton;
+	sf::RectangleShape menuButton;
 
 	sfp::PhysicsSprite shipSprites[2];
 
