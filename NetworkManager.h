@@ -4,6 +4,9 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+
+constexpr int TCP_MESSAGE_SIZE = 7;
+
 class NetworkManager {
 
 public:
@@ -18,6 +21,18 @@ public:
 		int oHealth;
 	};
 
+	enum NetworkEvent {
+		PlayerOne = 111,
+		PlayerTwo = 222,
+		Win = 333,
+		Lose = 444,
+		PlayOn = 555,
+		GameStart = 666,
+		Hit = 777,
+		Check = 888,
+		Error = -111,
+	};
+
 	NetworkManager(std::string ip, int port);
 	~NetworkManager();
 
@@ -30,6 +45,8 @@ public:
 	void SendHitEvent();
 
 	PacketData GetData();
+
+	NetworkManager::NetworkEvent CheckDefWinMessage();
 
 	void OnReturnToLobby();
 

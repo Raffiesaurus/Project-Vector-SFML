@@ -14,12 +14,13 @@ Game::Game(std::string ip, int port) {
 	isGamePaused = false;
 	isPlaying = false;
 	isGameOver = false;
+	isWinner = false;
 
 	playerMoveSpeed = 7.5f;
 	bulletSpeed = 25.0f;
 	bulletDmg = 20;
-
 	playerNumber = 1;
+	shotCount = 0;
 
 	playerPos = sf::Vector2f(0, 0);
 	lastMousePos = sf::Vector2f(0, 0);
@@ -28,9 +29,10 @@ Game::Game(std::string ip, int port) {
 	firstBulletVector = sf::Vector2f(0, 0);
 	secondBulletVector = sf::Vector2f(0, 0);
 	world = new sfp::World(sf::Vector2f(0, 0));
+
 	networkManager = std::make_unique<NetworkManager>(ip, port);
 	healthManager = std::make_unique<HealthManager>();
-	shotCount = 0;
+
 	game_state = MENU;
 }
 
@@ -252,9 +254,9 @@ void Game::InitializePlayers() {
 
 void Game::SwitchToLobby() {
 	game_state = MID_LOBBY;
-	int status = networkManager->Initialize(healthManager->GetPlayerHealth());
-	if (status != -1) {
-		playerNumber = status;
+	int playerNum = networkManager->Initialize(healthManager->GetPlayerHealth());
+	if (playerNum != NetworkManager::NetworkEvent::Error) {
+		playerNumber = playerNum;
 		std::cout << "I am player : " << playerNumber + 1 << std::endl;
 		game_state = LOBBY;
 		bool gameStartStaus = networkManager->WaitForGameStartResponse();
@@ -268,9 +270,31 @@ void Game::SwitchToLobby() {
 	}
 }
 
+void Game::ResetGame() {
+	isLeftPressed = false;
+	isDownPressed = false;
+	isUpPressed = false;
+	isRightPressed = false;
+	isGamePaused = false;
+	isPlaying = false;
+	isGameOver = false;
+	isWinner = false;
+
+	playerNumber = 1;
+	shotCount = 0;
+	playerPos = sf::Vector2f(0, 0);
+	lastMousePos = sf::Vector2f(0, 0);
+	firstBulletPoint = sf::Vector2f(0, 0);
+	secondBulletPoint = sf::Vector2f(0, 0);
+	firstBulletVector = sf::Vector2f(0, 0);
+	secondBulletVector = sf::Vector2f(0, 0);
+	//world = new sfp::World(sf::Vector2f(0, 0));
+}
+
 void Game::SwitchToHome() {
 	networkManager->OnReturnToLobby();
 	game_state = MENU;
+	ResetGame();
 }
 
 void Game::RenderingThread() {
@@ -308,9 +332,22 @@ void Game::RenderingThread() {
 			if (!isGameOver && gameClock.getElapsedTime() > sf::seconds(1)) {
 				CheckBallCollision();
 				UpdateHealthTexts();
-				CheckGameOver();
 				UpdatePlayerMovement();
 				UpdatePlayerRotation();
+				auto winCheck = networkManager->CheckDefWinMessage();
+				if (winCheck == NetworkManager::NetworkEvent::Win) {
+					std::cout << " WINNER WINNER VEGAN DINNER \n";
+					isGameOver = true;
+					isWinner = true;
+					game_state = GAME_OVER;
+					gameResultText.setString("YOU WON");
+				} else if (winCheck == NetworkManager::NetworkEvent::Lose) {
+					std::cout << " CAN'T BELIEVE YOU'VE LOST THIS \n";
+					isGameOver = true;
+					isWinner = false;
+					game_state = GAME_OVER;
+					gameResultText.setString("YOU LOST");
+				}
 			}
 			window.draw(bgSprite);
 			window.draw(playerHealthText);
@@ -322,7 +359,6 @@ void Game::RenderingThread() {
 			//if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(0)) {
 			lastMessageSentTime = gameClock.getElapsedTime();
 
-
 			data.playerNumber = playerNumber;
 			data.bulletPosX = bulletCircles[playerNumber].getCenter().spritePosX;
 			data.bulletPosY = bulletCircles[playerNumber].getCenter().spritePosY;
@@ -331,9 +367,7 @@ void Game::RenderingThread() {
 			data.rotationAngle = shipSprites[playerNumber].getRotation();
 			networkManager->SendData(data);
 
-
 			serverData = networkManager->GetData();
-			std::cout << serverData.rotationAngle << std::endl;
 			if (serverData.playerNumber != playerNumber) {
 				UpdateOtherShipPosition(serverData.spritePosX, serverData.spritePosY);
 				UpdateOtherBulletPosition(serverData.bulletPosX, serverData.bulletPosY);
@@ -357,10 +391,6 @@ void Game::RenderingThread() {
 	}
 }
 
-void Game::Update() {
-
-}
-
 void Game::CheckBallCollision() {
 	if (bulletCircles[playerNumber].collideWith(shipSprites[!playerNumber]).hasCollided) {
 		bulletCircles[playerNumber].setCenter(sf::Vector2f(10000, 10000));
@@ -370,23 +400,6 @@ void Game::CheckBallCollision() {
 	}
 
 	return;
-}
-
-void Game::CheckGameOver() {
-	if (healthManager->GetPlayerHealth() <= 0) {
-		std::cout << " CAN'T BELIEVE YOU'VE LOST THIS \n";
-		isGameOver = true;
-		game_state = GAME_OVER;
-		gameResultText.setString("YOU LOST");
-	}
-
-	if (healthManager->GetOpponentHealth() <= 0) {
-		std::cout << " WINNER WINNER VEGAN DINNER \n";
-		isGameOver = true;
-		game_state = GAME_OVER;
-		gameResultText.setString("YOU WON");
-	}
-
 }
 
 void Game::KeyboardPressEventCheck(sf::Event::KeyEvent key) {
@@ -476,7 +489,7 @@ void Game::MouseButtonReleaseEventCheck(sf::Event::MouseButtonEvent mButton) {
 
 void Game::FireBullet() {
 	shotCount++;
-	if (isGameOver || shotCount < 1) {
+	if (isGameOver || shotCount <= 1) {
 		return;
 	}
 	sf::Vector2f playerPosition = shipSprites[playerNumber].getCenter();

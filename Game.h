@@ -45,10 +45,9 @@ public:
 
 	void UpdateHealthTexts();
 	void CheckBallCollision();
-	void CheckGameOver();
 
 	void SwitchToLobby();
-
+	void ResetGame();
 	void SwitchToHome();
 
 	void UpdateOtherShipPosition(float x, float y);
@@ -79,7 +78,7 @@ private:
 	bool isRightPressed;
 	bool isUpPressed;
 	bool isDownPressed;
-
+	bool isWinner;
 	bool isGamePaused;
 	bool isPlaying;
 	bool isGameOver;
