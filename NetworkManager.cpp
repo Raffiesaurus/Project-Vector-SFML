@@ -29,7 +29,7 @@ int NetworkManager::Initialize(int hp) {
 	udpSocket.setBlocking(false);
 	tcpSocketStatus = tcpSocket.connect(serverIp, serverPort);
 	if (tcpSocketStatus != sf::Socket::Done) {
-		std::cout << "Error " << tcpSocketStatus;
+		std::cout << "Cannot connect to server." << std::endl;
 		return NetworkEvent::Error;
 	} else {
 		std::cout << "Connected\n";
