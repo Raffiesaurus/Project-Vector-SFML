@@ -13,13 +13,14 @@ class NetworkManager {
 public:
 	struct PacketData {
 		int playerNumber = 0;
+		int mHealth = 0;
+		int oHealth = 0;
 		float spritePosX = 0;
 		float spritePosY = 0;
 		float bulletPosX = 0;
 		float bulletPosY = 0;
 		float rotationAngle = 0;
-		int mHealth = 0;
-		int oHealth = 0;
+		float gameTime = 0;
 	};
 
 	enum NetworkEvent {
@@ -51,7 +52,7 @@ public:
 
 	void OnReturnToLobby();
 
-	NetworkManager::PacketData RunPrediction(PacketData currPacket);
+	NetworkManager::PacketData RunPrediction(float gameTime);
 
 private:
 
@@ -63,7 +64,7 @@ private:
 
 	sf::UdpSocket udpSocket;
 
-	std::chrono::system_clock::time_point lastMessageTime;
+	float lastMessageTime;
 
 	std::vector<PacketData> prevPacketsRecv;
 };

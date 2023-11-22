@@ -12,15 +12,15 @@ NetworkManager::~NetworkManager() {
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const NetworkManager::PacketData& data) {
-	return packet << data.playerNumber << data.spritePosX << data.spritePosY << data.bulletPosX << data.bulletPosY << data.rotationAngle;
+	return packet << data.playerNumber << data.spritePosX << data.spritePosY << data.bulletPosX << data.bulletPosY << data.rotationAngle << data.gameTime;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, NetworkManager::PacketData& data) {
-	return packet >> data.playerNumber >> data.spritePosX >> data.spritePosY >> data.bulletPosX >> data.bulletPosY >> data.rotationAngle >> data.mHealth >> data.oHealth;
+	return packet >> data.playerNumber >> data.spritePosX >> data.spritePosY >> data.bulletPosX >> data.bulletPosY >> data.rotationAngle >> data.mHealth >> data.oHealth >> data.gameTime;
 }
 
 std::ostream& operator<<(std::ostream& os, const NetworkManager::PacketData& data) {
-	return os << data.playerNumber << data.spritePosX << data.spritePosY << data.bulletPosX << data.bulletPosY << data.rotationAngle << data.mHealth << data.oHealth;
+	return os << data.playerNumber << data.spritePosX << data.spritePosY << data.bulletPosX << data.bulletPosY << data.rotationAngle << data.mHealth << data.oHealth << data.gameTime;
 }
 
 int NetworkManager::Initialize(int hp) {
@@ -96,8 +96,13 @@ NetworkManager::PacketData NetworkManager::GetData() {
 	udpSocket.receive(packet, ipAddr, port);
 	PacketData data;
 	packet >> data;
-	lastMessageTime = std::chrono::system_clock::now();
-	return RunPrediction(data);
+	if (prevPacketsRecv.size() < 2) {
+		prevPacketsRecv.push_back(data);
+	} else {
+		prevPacketsRecv.erase(prevPacketsRecv.begin());
+		prevPacketsRecv.push_back(data);
+	}
+	return data;
 }
 
 NetworkManager::NetworkEvent NetworkManager::CheckDefWinMessage() {
@@ -122,21 +127,35 @@ void NetworkManager::OnReturnToLobby() {
 	tcpSocketStatus = sf::Socket::Status::NotReady;
 }
 
-NetworkManager::PacketData NetworkManager::RunPrediction(PacketData currPacket) {
-	return currPacket;
+NetworkManager::PacketData NetworkManager::RunPrediction(float gameTime) {
 
-	if (prevPacketsRecv.size() < 4) {
-		prevPacketsRecv.push_back(currPacket);
+	// 0 - Old
+	// 1 - New
+	if (prevPacketsRecv.size() < 2) {
+		return prevPacketsRecv[prevPacketsRecv.size() - 1];
 	}
 
-	auto now = std::chrono::system_clock::now();
+	PacketData msgOld = prevPacketsRecv[prevPacketsRecv.size() - 2];
+	PacketData msgNew = prevPacketsRecv[prevPacketsRecv.size() - 1];
+	PacketData msgReturn = msgNew;
 
-	std::chrono::duration<double> elapsed_seconds = now - lastMessageTime;
+	float distX = abs(msgOld.spritePosX - msgNew.spritePosX);
+	float distY = abs(msgOld.spritePosY - msgNew.spritePosY);
+	std::cout << distX << " " << distY << std::endl;
 
-	/*float distX = prevPacketRecv.spritePosX - currPacket.spritePosX;
-	float distY = prevPacketRecv.spritePosY - currPacket.spritePosY;*/
-	
+	float time = abs(msgOld.gameTime - msgNew.gameTime);
 
+	float speedX = distX / time;
+	float speedY = distY / time;
 
-	//prevPacketRecv = currPacket;
+	float displacementX = speedX * gameTime;
+	float displacementY = speedY * gameTime;
+
+	float nextX = msgOld.spritePosX + displacementX;
+	float nextY = msgOld.spritePosY + displacementY;
+
+	msgReturn.spritePosX = nextX;
+	msgReturn.spritePosY = nextY;
+
+	return msgReturn;
 }

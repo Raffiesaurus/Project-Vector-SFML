@@ -370,16 +370,26 @@ void Game::RenderingThread() {
 				data.spritePosX = shipSprites[playerNumber].getCenter().spritePosX;
 				data.spritePosY = shipSprites[playerNumber].getCenter().spritePosY;
 				data.rotationAngle = shipSprites[playerNumber].getRotation();
+				data.gameTime = deltaMs;
 				networkManager->SendData(data);
 
-				serverData = networkManager->GetData();
-				if (serverData.playerNumber != playerNumber) {
+				networkManager->GetData();
+				/*if (serverData.playerNumber != playerNumber) {
 					UpdateOtherShipPosition(serverData.spritePosX, serverData.spritePosY);
 					UpdateOtherBulletPosition(serverData.bulletPosX, serverData.bulletPosY);
 					UpdateOtherShipRotation(serverData.rotationAngle);
 					healthManager->SetHealth(true, serverData.mHealth);
 					healthManager->SetHealth(false, serverData.oHealth);
-				}
+				}*/
+			}
+
+			serverData = networkManager->RunPrediction(deltaMs);
+			if (serverData.playerNumber != playerNumber) {
+				UpdateOtherShipPosition(serverData.spritePosX, serverData.spritePosY);
+				UpdateOtherBulletPosition(serverData.bulletPosX, serverData.bulletPosY);
+				UpdateOtherShipRotation(serverData.rotationAngle);
+				healthManager->SetHealth(true, serverData.mHealth);
+				healthManager->SetHealth(false, serverData.oHealth);
 			}
 		}
 
