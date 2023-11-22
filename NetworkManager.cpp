@@ -96,14 +96,14 @@ NetworkManager::PacketData NetworkManager::GetData() {
 	udpSocket.receive(packet, ipAddr, port);
 	PacketData data;
 	packet >> data;
-	return data;
+	lastMessageTime = std::chrono::system_clock::now();
+	return RunPrediction(data);
 }
 
 NetworkManager::NetworkEvent NetworkManager::CheckDefWinMessage() {
 	char data[TCP_MESSAGE_SIZE];
 	std::size_t received;
 	if (tcpSocket.receive(data, TCP_MESSAGE_SIZE, received) == sf::Socket::Done) {
-		std::cout << "Received " << received << " bytes" << " message: " << data << std::endl;
 		switch (std::stoi(data)) {
 		case NetworkEvent::Win:
 			return NetworkEvent::Win;
@@ -120,4 +120,23 @@ void NetworkManager::OnReturnToLobby() {
 	tcpSocket.disconnect();
 	udpSocket.unbind();
 	tcpSocketStatus = sf::Socket::Status::NotReady;
+}
+
+NetworkManager::PacketData NetworkManager::RunPrediction(PacketData currPacket) {
+	return currPacket;
+
+	if (prevPacketsRecv.size() < 4) {
+		prevPacketsRecv.push_back(currPacket);
+	}
+
+	auto now = std::chrono::system_clock::now();
+
+	std::chrono::duration<double> elapsed_seconds = now - lastMessageTime;
+
+	/*float distX = prevPacketRecv.spritePosX - currPacket.spritePosX;
+	float distY = prevPacketRecv.spritePosY - currPacket.spritePosY;*/
+	
+
+
+	//prevPacketRecv = currPacket;
 }

@@ -29,7 +29,6 @@ public:
 	void SetupGameOverScreen();
 	void SetupGameScreen();
 	void RenderingThread();
-	void Update();
 
 	void KeyboardPressEventCheck(sf::Event::KeyEvent key);
 	void KeyboardReleaseEventCheck(sf::Event::KeyEvent key);

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <thread>
 
 constexpr int TCP_MESSAGE_SIZE = 7;
 
@@ -11,14 +12,14 @@ class NetworkManager {
 
 public:
 	struct PacketData {
-		int playerNumber;
-		float spritePosX;
-		float spritePosY;
-		float bulletPosX;
-		float bulletPosY;
-		float rotationAngle;
-		int mHealth;
-		int oHealth;
+		int playerNumber = 0;
+		float spritePosX = 0;
+		float spritePosY = 0;
+		float bulletPosX = 0;
+		float bulletPosY = 0;
+		float rotationAngle = 0;
+		int mHealth = 0;
+		int oHealth = 0;
 	};
 
 	enum NetworkEvent {
@@ -50,6 +51,8 @@ public:
 
 	void OnReturnToLobby();
 
+	NetworkManager::PacketData RunPrediction(PacketData currPacket);
+
 private:
 
 	sf::IpAddress serverIp;
@@ -60,4 +63,7 @@ private:
 
 	sf::UdpSocket udpSocket;
 
+	std::chrono::system_clock::time_point lastMessageTime;
+
+	std::vector<PacketData> prevPacketsRecv;
 };

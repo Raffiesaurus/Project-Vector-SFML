@@ -299,10 +299,15 @@ void Game::SwitchToHome() {
 
 void Game::RenderingThread() {
 	window.setActive(true);
-	sf::Clock gameClock;
 	Time lastMessageSentTime, lastMessageReceivedTime = sf::seconds(0);
 	NetworkManager::PacketData data, serverData;
+	sf::Clock gameClock;
+	auto lastCheckTime = std::chrono::system_clock::now();
 	while (window.isOpen()) {
+		auto now = std::chrono::system_clock::now();
+		std::chrono::duration<double> elapsed_seconds = now - lastCheckTime;
+		lastCheckTime = now;
+		//std::cout << " " << elapsed_seconds.count() << std::endl;
 		if (game_state == MENU) {
 			window.draw(startButton);
 			window.draw(exitButton);
@@ -356,26 +361,26 @@ void Game::RenderingThread() {
 			window.draw(bulletCircles[1]);
 			window.draw(shipSprites[0]);
 			window.draw(shipSprites[1]);
-			//if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(0)) {
-			lastMessageSentTime = gameClock.getElapsedTime();
+			if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(0.5)) {
+				lastMessageSentTime = gameClock.getElapsedTime();
 
-			data.playerNumber = playerNumber;
-			data.bulletPosX = bulletCircles[playerNumber].getCenter().spritePosX;
-			data.bulletPosY = bulletCircles[playerNumber].getCenter().spritePosY;
-			data.spritePosX = shipSprites[playerNumber].getCenter().spritePosX;
-			data.spritePosY = shipSprites[playerNumber].getCenter().spritePosY;
-			data.rotationAngle = shipSprites[playerNumber].getRotation();
-			networkManager->SendData(data);
+				data.playerNumber = playerNumber;
+				data.bulletPosX = bulletCircles[playerNumber].getCenter().spritePosX;
+				data.bulletPosY = bulletCircles[playerNumber].getCenter().spritePosY;
+				data.spritePosX = shipSprites[playerNumber].getCenter().spritePosX;
+				data.spritePosY = shipSprites[playerNumber].getCenter().spritePosY;
+				data.rotationAngle = shipSprites[playerNumber].getRotation();
+				networkManager->SendData(data);
 
-			serverData = networkManager->GetData();
-			if (serverData.playerNumber != playerNumber) {
-				UpdateOtherShipPosition(serverData.spritePosX, serverData.spritePosY);
-				UpdateOtherBulletPosition(serverData.bulletPosX, serverData.bulletPosY);
-				UpdateOtherShipRotation(serverData.rotationAngle);
-				healthManager->SetHealth(true, serverData.mHealth);
-				healthManager->SetHealth(false, serverData.oHealth);
+				serverData = networkManager->GetData();
+				if (serverData.playerNumber != playerNumber) {
+					UpdateOtherShipPosition(serverData.spritePosX, serverData.spritePosY);
+					UpdateOtherBulletPosition(serverData.bulletPosX, serverData.bulletPosY);
+					UpdateOtherShipRotation(serverData.rotationAngle);
+					healthManager->SetHealth(true, serverData.mHealth);
+					healthManager->SetHealth(false, serverData.oHealth);
+				}
 			}
-			//}
 		}
 
 		else if (game_state == GAME_OVER) {
