@@ -46,7 +46,7 @@ public:
 
 	void SendHitEvent();
 
-	PacketData GetData();
+	void GetData();
 
 	NetworkManager::NetworkEvent CheckDefWinMessage();
 
@@ -64,7 +64,7 @@ private:
 
 	sf::UdpSocket udpSocket;
 
-	float lastMessageTime;
+	float lastPredictionTime;
 
 	std::vector<PacketData> prevPacketsRecv;
 };

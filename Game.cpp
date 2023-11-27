@@ -228,6 +228,7 @@ void Game::InitializePlayers() {
 		shipSprites[0].setOrigin(40, 40);
 		shipSprites[0].setCenter(Vector2f(80, 890));
 		shipSprites[0].setSize(sf::Vector2f(80, 80));
+		shipSprites[0].setStatic(true);
 		world->AddPhysicsBody(shipSprites[0]);
 	}
 
@@ -238,6 +239,7 @@ void Game::InitializePlayers() {
 		shipSprites[1].setOrigin(40, 40);
 		shipSprites[1].setCenter(sf::Vector2f(440, 180));
 		shipSprites[1].setSize(sf::Vector2f(80, 80));
+		shipSprites[1].setStatic(true);
 		world->AddPhysicsBody(shipSprites[1]);
 	}
 
@@ -288,7 +290,12 @@ void Game::ResetGame() {
 	secondBulletPoint = sf::Vector2f(0, 0);
 	firstBulletVector = sf::Vector2f(0, 0);
 	secondBulletVector = sf::Vector2f(0, 0);
-	//world = new sfp::World(sf::Vector2f(0, 0));
+	shipSprites[0].setCenter(Vector2f(80, 890));
+	shipSprites[1].setCenter(sf::Vector2f(440, 180));
+	bulletCircles[0].setCenter(sf::Vector2f(10000, 10000));
+	bulletCircles[1].setCenter(sf::Vector2f(10000, 10000));
+	healthManager->SetHealth(true, 100);
+	healthManager->SetHealth(false, 100);
 }
 
 void Game::SwitchToHome() {
@@ -307,7 +314,6 @@ void Game::RenderingThread() {
 		auto now = std::chrono::system_clock::now();
 		std::chrono::duration<double> elapsed_seconds = now - lastCheckTime;
 		lastCheckTime = now;
-		//std::cout << " " << elapsed_seconds.count() << std::endl;
 		if (game_state == MENU) {
 			window.draw(startButton);
 			window.draw(exitButton);
@@ -361,29 +367,21 @@ void Game::RenderingThread() {
 			window.draw(bulletCircles[1]);
 			window.draw(shipSprites[0]);
 			window.draw(shipSprites[1]);
-			if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(0.5)) {
-				lastMessageSentTime = gameClock.getElapsedTime();
 
+			if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(1.0f / 30.0f)) {
+				lastMessageSentTime = gameClock.getElapsedTime();
 				data.playerNumber = playerNumber;
 				data.bulletPosX = bulletCircles[playerNumber].getCenter().spritePosX;
 				data.bulletPosY = bulletCircles[playerNumber].getCenter().spritePosY;
 				data.spritePosX = shipSprites[playerNumber].getCenter().spritePosX;
 				data.spritePosY = shipSprites[playerNumber].getCenter().spritePosY;
 				data.rotationAngle = shipSprites[playerNumber].getRotation();
-				data.gameTime = deltaMs;
+				data.gameTime = gameClock.getElapsedTime().asMilliseconds();
 				networkManager->SendData(data);
-
 				networkManager->GetData();
-				/*if (serverData.playerNumber != playerNumber) {
-					UpdateOtherShipPosition(serverData.spritePosX, serverData.spritePosY);
-					UpdateOtherBulletPosition(serverData.bulletPosX, serverData.bulletPosY);
-					UpdateOtherShipRotation(serverData.rotationAngle);
-					healthManager->SetHealth(true, serverData.mHealth);
-					healthManager->SetHealth(false, serverData.oHealth);
-				}*/
 			}
 
-			serverData = networkManager->RunPrediction(deltaMs);
+			serverData = networkManager->RunPrediction(gameClock.getElapsedTime().asMilliseconds());
 			if (serverData.playerNumber != playerNumber) {
 				UpdateOtherShipPosition(serverData.spritePosX, serverData.spritePosY);
 				UpdateOtherBulletPosition(serverData.bulletPosX, serverData.bulletPosY);

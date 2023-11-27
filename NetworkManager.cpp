@@ -20,7 +20,7 @@ sf::Packet& operator >>(sf::Packet& packet, NetworkManager::PacketData& data) {
 }
 
 std::ostream& operator<<(std::ostream& os, const NetworkManager::PacketData& data) {
-	return os << data.playerNumber << data.spritePosX << data.spritePosY << data.bulletPosX << data.bulletPosY << data.rotationAngle << data.mHealth << data.oHealth << data.gameTime;
+	return os << data.playerNumber << " " << data.spritePosX << " " << data.spritePosY << " " << data.bulletPosX << " " << data.bulletPosY << " " << data.rotationAngle << " " << data.mHealth << " " << data.oHealth << " " << data.gameTime;
 }
 
 int NetworkManager::Initialize(int hp) {
@@ -89,20 +89,21 @@ void NetworkManager::SendHitEvent() {
 	return;
 }
 
-NetworkManager::PacketData NetworkManager::GetData() {
+void NetworkManager::GetData() {
 	sf::Packet packet;
 	sf::IpAddress ipAddr;
 	unsigned short port;
 	udpSocket.receive(packet, ipAddr, port);
 	PacketData data;
 	packet >> data;
-	if (prevPacketsRecv.size() < 2) {
-		prevPacketsRecv.push_back(data);
-	} else {
-		prevPacketsRecv.erase(prevPacketsRecv.begin());
-		prevPacketsRecv.push_back(data);
+	if (data.gameTime > 0) {
+		if (prevPacketsRecv.size() < 2) {
+			prevPacketsRecv.push_back(data);
+		} else {
+			prevPacketsRecv.erase(prevPacketsRecv.begin());
+			prevPacketsRecv.push_back(data);
+		}
 	}
-	return data;
 }
 
 NetworkManager::NetworkEvent NetworkManager::CheckDefWinMessage() {
@@ -129,33 +130,83 @@ void NetworkManager::OnReturnToLobby() {
 
 NetworkManager::PacketData NetworkManager::RunPrediction(float gameTime) {
 
-	// 0 - Old
-	// 1 - New
+	PacketData invalidData;
+
+	if (prevPacketsRecv.size() <= 0) {
+		lastPredictionTime = gameTime;
+		return invalidData;
+	}
+
 	if (prevPacketsRecv.size() < 2) {
+		lastPredictionTime = gameTime;
 		return prevPacketsRecv[prevPacketsRecv.size() - 1];
 	}
 
-	PacketData msgOld = prevPacketsRecv[prevPacketsRecv.size() - 2];
-	PacketData msgNew = prevPacketsRecv[prevPacketsRecv.size() - 1];
-	PacketData msgReturn = msgNew;
+	PacketData* msgOld = &prevPacketsRecv[prevPacketsRecv.size() - 2];
+	PacketData* msgNew = &prevPacketsRecv[prevPacketsRecv.size() - 1];
 
-	float distX = abs(msgOld.spritePosX - msgNew.spritePosX);
-	float distY = abs(msgOld.spritePosY - msgNew.spritePosY);
-	std::cout << distX << " " << distY << std::endl;
+	float time = (msgNew->gameTime - msgOld->gameTime);
+	float gameTimeDiff = abs(lastPredictionTime - gameTime);
 
-	float time = abs(msgOld.gameTime - msgNew.gameTime);
+	// Ship Pos
+	float distX = (msgNew->spritePosX - msgOld->spritePosX);
+	float distY = (msgNew->spritePosY - msgOld->spritePosY);
 
 	float speedX = distX / time;
 	float speedY = distY / time;
 
-	float displacementX = speedX * gameTime;
-	float displacementY = speedY * gameTime;
+	float displacementX = speedX * gameTimeDiff;
+	float displacementY = speedY * gameTimeDiff;
 
-	float nextX = msgOld.spritePosX + displacementX;
-	float nextY = msgOld.spritePosY + displacementY;
+	float nextX = msgOld->spritePosX + displacementX;
+	float nextY = msgOld->spritePosY + displacementY;
 
-	msgReturn.spritePosX = nextX;
-	msgReturn.spritePosY = nextY;
+	// Bullet
+	//if (msgOld->bulletPosX != 10000 && msgOld->bulletPosY != 10000) {
+		float distXB = (msgNew->bulletPosX - msgOld->bulletPosX);
+		float distYB = (msgNew->bulletPosY - msgOld->bulletPosY);
 
-	return msgReturn;
+		float speedXB = distXB / time;
+		float speedYB = distYB / time;
+
+		float displacementXB = speedXB * gameTimeDiff;
+		float displacementYB = speedYB * gameTimeDiff;
+
+		float nextXB = msgOld->bulletPosX + displacementXB;
+		float nextYB = msgOld->bulletPosY + displacementYB;
+	//} else {
+		//msgOld->bulletPosX = msgNew->bulletPosX;
+		//msgOld->bulletPosY = msgNew->bulletPosY;
+	//}
+
+	// Rotation
+	float rot = (msgNew->rotationAngle - msgOld->rotationAngle);
+	float speedR = rot / time;
+	float displacementR = speedR * gameTimeDiff;
+	float nextR = msgOld->rotationAngle + displacementR;
+
+	// Check
+	if ((msgOld->spritePosX != msgNew->spritePosX) || (msgOld->spritePosY != msgNew->spritePosY)) {
+		std::cout << "---------------------------------------------------------------------------\n";
+		std::cout << gameTime << std::endl;
+		std::cout << "Sprite X Old, New : " << msgOld->spritePosX << " " << msgNew->spritePosX << std::endl;
+		std::cout << "Sprite Y : " << msgOld->spritePosY << " " << msgNew->spritePosY << std::endl;
+		std::cout << "Game Time Old, New : " << msgOld->gameTime << " " << msgNew->gameTime << std::endl;
+		std::cout << "Speed X, Y : " << speedX << " " << speedY << std::endl;
+		std::cout << "Displacement X, Y : " << displacementX << " " << displacementY << std::endl;
+		std::cout << "Next X, Y : " << nextX << " " << nextY << std::endl;
+		std::cout << "---------------------------------------------------------------------------\n";
+	}
+
+	//msgOld->gameTime = gameTime;
+	msgOld->spritePosX = nextX;
+	msgOld->spritePosY = nextY;
+	msgOld->bulletPosX = nextXB;
+	msgOld->bulletPosY = nextYB;
+	msgOld->rotationAngle = nextR;
+
+	PacketData returnData = *msgOld;
+	lastPredictionTime = gameTime;
+
+	return returnData;
 }
