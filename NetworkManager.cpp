@@ -186,7 +186,7 @@ NetworkManager::PacketData NetworkManager::RunPrediction(float gameTime) {
 	float nextR = msgOld->rotationAngle + displacementR;
 
 	// Check
-	if ((msgOld->spritePosX != msgNew->spritePosX) || (msgOld->spritePosY != msgNew->spritePosY)) {
+	/*if ((msgOld->spritePosX != msgNew->spritePosX) || (msgOld->spritePosY != msgNew->spritePosY)) {
 		std::cout << "---------------------------------------------------------------------------\n";
 		std::cout << gameTime << std::endl;
 		std::cout << "Sprite X Old, New : " << msgOld->spritePosX << " " << msgNew->spritePosX << std::endl;
@@ -196,7 +196,7 @@ NetworkManager::PacketData NetworkManager::RunPrediction(float gameTime) {
 		std::cout << "Displacement X, Y : " << displacementX << " " << displacementY << std::endl;
 		std::cout << "Next X, Y : " << nextX << " " << nextY << std::endl;
 		std::cout << "---------------------------------------------------------------------------\n";
-	}
+	}*/
 
 	//msgOld->gameTime = gameTime;
 	msgOld->spritePosX = nextX;
