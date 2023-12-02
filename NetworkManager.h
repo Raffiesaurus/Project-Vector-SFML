@@ -54,6 +54,8 @@ public:
 
 	NetworkManager::PacketData RunPrediction(float gameTime);
 
+	int messagesPerSecond = 15;
+
 private:
 
 	sf::IpAddress serverIp;

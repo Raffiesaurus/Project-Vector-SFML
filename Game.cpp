@@ -15,9 +15,10 @@ Game::Game(std::string ip, int port) {
 	isPlaying = false;
 	isGameOver = false;
 	isWinner = false;
+	deltaMs = 0;
 
-	playerMoveSpeed = 7.5f;
-	bulletSpeed = 25.0f;
+	playerMoveSpeed = 6.0f;
+	bulletSpeed = 4.0f;
 	bulletDmg = 20;
 	playerNumber = 1;
 	shotCount = 0;
@@ -44,7 +45,6 @@ void Game::InitializeGame() {
 	std::cout << "Initialising game..." << std::endl;
 	SetupMenuScreen();
 	SetupLobbyScreen();
-	SetupGameScreen();
 	SetupGameOverScreen();
 	InitializePlayers();
 	InitializeScreen();
@@ -62,7 +62,7 @@ void Game::SetupMenuScreen() {
 
 	startButton.setSize(sf::Vector2f(250, 50));
 	startButton.setPosition(sf::Vector2f(140.0f, 750.f));
-	startButton.setFillColor(sf::Color::Green);
+	startButton.setFillColor(sf::Color(37, 211, 102));
 
 	startText.setFont(font);
 	startText.setString("START");
@@ -74,7 +74,7 @@ void Game::SetupMenuScreen() {
 
 	exitButton.setSize(sf::Vector2f(250, 50));
 	exitButton.setPosition(sf::Vector2f(140.0f, 850.f));
-	exitButton.setFillColor(sf::Color::Red);
+	exitButton.setFillColor(sf::Color(204, 85, 61));
 
 	exitText.setFont(font);
 	exitText.setString("EXIT");
@@ -106,13 +106,13 @@ void Game::SetupGameOverScreen() {
 
 	menuButton.setSize(sf::Vector2f(250, 50));
 	menuButton.setPosition(sf::Vector2f(140.0f, 750.f));
-	menuButton.setFillColor(sf::Color::Green);
+	menuButton.setFillColor(sf::Color(37, 211, 102));
 
 	gameResultText.setFont(font);
 	gameResultText.setString("N/A");
 	gameResultText.setCharacterSize(42);
 	gameResultText.setFillColor(sf::Color::White);
-	gameResultText.setOutlineColor(sf::Color::Red);
+	gameResultText.setOutlineColor(sf::Color(204, 85, 61));
 	gameResultText.setOutlineThickness(1.5);
 	gameResultText.setPosition(sf::Vector2f(180.0f, 400.0f));
 
@@ -204,17 +204,19 @@ void Game::SetupGameScreen() {
 		bgSprite.setTexture(bgTexture);
 	}
 
-	playerHealthText.setFont(font);
-	playerHealthText.setString(std::to_string(healthManager->GetPlayerHealth()));
-	playerHealthText.setCharacterSize(24);
-	playerHealthText.setFillColor(sf::Color::Green);
-	playerHealthText.setPosition(500, 910);
+	Color textCol = Color(147, 205, 221, 255);
 
-	opponentHealthText.setFont(font);
-	opponentHealthText.setString(std::to_string(healthManager->GetOpponentHealth()));
-	opponentHealthText.setCharacterSize(24);
-	opponentHealthText.setFillColor(sf::Color::Red);
-	opponentHealthText.setPosition(20, 20);
+	healthTexts[playerNumber].setFont(font);
+	healthTexts[playerNumber].setString("MY HP: " + std::to_string(healthManager->GetPlayerHealth()));
+	healthTexts[playerNumber].setCharacterSize(24);
+	healthTexts[playerNumber].setFillColor(textCol);
+	healthTexts[playerNumber].setPosition(350, 20);
+
+	healthTexts[!playerNumber].setFont(font);
+	healthTexts[!playerNumber].setString("ENEMY HP: " + std::to_string(healthManager->GetOpponentHealth()));
+	healthTexts[!playerNumber].setCharacterSize(24);
+	healthTexts[!playerNumber].setFillColor(textCol);
+	healthTexts[!playerNumber].setPosition(20, 20);
 
 	return;
 }
@@ -260,6 +262,7 @@ void Game::SwitchToLobby() {
 	if (playerNum != NetworkManager::NetworkEvent::Error) {
 		playerNumber = playerNum;
 		std::cout << "I am player : " << playerNumber + 1 << std::endl;
+		SetupGameScreen();
 		game_state = LOBBY;
 		bool gameStartStaus = networkManager->WaitForGameStartResponse();
 		if (gameStartStaus) {
@@ -306,14 +309,10 @@ void Game::SwitchToHome() {
 
 void Game::RenderingThread() {
 	window.setActive(true);
-	Time lastMessageSentTime, lastMessageReceivedTime = sf::seconds(0);
+	sf::Time lastMessageSentTime = sf::seconds(0);
 	NetworkManager::PacketData data, serverData;
 	sf::Clock gameClock;
-	auto lastCheckTime = std::chrono::system_clock::now();
 	while (window.isOpen()) {
-		auto now = std::chrono::system_clock::now();
-		std::chrono::duration<double> elapsed_seconds = now - lastCheckTime;
-		lastCheckTime = now;
 		if (game_state == MENU) {
 			window.draw(startButton);
 			window.draw(exitButton);
@@ -347,13 +346,13 @@ void Game::RenderingThread() {
 				UpdatePlayerRotation();
 				auto winCheck = networkManager->CheckDefWinMessage();
 				if (winCheck == NetworkManager::NetworkEvent::Win) {
-					std::cout << " WINNER WINNER VEGAN DINNER \n";
+					std::cout << "WINNER WINNER VEGAN DINNER \n";
 					isGameOver = true;
 					isWinner = true;
 					game_state = GAME_OVER;
 					gameResultText.setString("YOU WON");
 				} else if (winCheck == NetworkManager::NetworkEvent::Lose) {
-					std::cout << " CAN'T BELIEVE YOU'VE LOST THIS \n";
+					std::cout << "CAN'T BELIEVE YOU'VE LOST THIS \n";
 					isGameOver = true;
 					isWinner = false;
 					game_state = GAME_OVER;
@@ -361,14 +360,14 @@ void Game::RenderingThread() {
 				}
 			}
 			window.draw(bgSprite);
-			window.draw(playerHealthText);
-			window.draw(opponentHealthText);
+			window.draw(healthTexts[0]);
+			window.draw(healthTexts[1]);
 			window.draw(bulletCircles[0]);
 			window.draw(bulletCircles[1]);
 			window.draw(shipSprites[0]);
 			window.draw(shipSprites[1]);
 
-			if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(1.0f / 30.0f)) {
+			if (gameClock.getElapsedTime() - lastMessageSentTime > sf::seconds(1.0f / networkManager->messagesPerSecond)) {
 				lastMessageSentTime = gameClock.getElapsedTime();
 				data.playerNumber = playerNumber;
 				data.bulletPosX = bulletCircles[playerNumber].getCenter().spritePosX;
@@ -378,8 +377,8 @@ void Game::RenderingThread() {
 				data.rotationAngle = shipSprites[playerNumber].getRotation();
 				data.gameTime = gameClock.getElapsedTime().asMilliseconds();
 				networkManager->SendData(data);
-				networkManager->GetData();
 			}
+			networkManager->GetData();
 
 			serverData = networkManager->RunPrediction(gameClock.getElapsedTime().asMilliseconds());
 			if (serverData.playerNumber != playerNumber) {
@@ -533,8 +532,8 @@ void Game::UpdatePlayerRotation() {
 }
 
 void Game::UpdateHealthTexts() {
-	playerHealthText.setString(std::to_string(healthManager->GetPlayerHealth()));
-	opponentHealthText.setString(std::to_string(healthManager->GetOpponentHealth()));
+	healthTexts[playerNumber].setString("MY HP: " + std::to_string(healthManager->GetPlayerHealth()));
+	healthTexts[!playerNumber].setString("ENEMY HP: " + std::to_string(healthManager->GetOpponentHealth()));
 	return;
 }
 

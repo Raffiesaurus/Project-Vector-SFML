@@ -148,7 +148,6 @@ NetworkManager::PacketData NetworkManager::RunPrediction(float gameTime) {
 	float time = (msgNew->gameTime - msgOld->gameTime);
 	float gameTimeDiff = abs(lastPredictionTime - gameTime);
 
-	// Ship Pos
 	float distX = (msgNew->spritePosX - msgOld->spritePosX);
 	float distY = (msgNew->spritePosY - msgOld->spritePosY);
 
@@ -161,8 +160,10 @@ NetworkManager::PacketData NetworkManager::RunPrediction(float gameTime) {
 	float nextX = msgOld->spritePosX + displacementX;
 	float nextY = msgOld->spritePosY + displacementY;
 
-	// Bullet
-	//if (msgOld->bulletPosX != 10000 && msgOld->bulletPosY != 10000) {
+	msgOld->spritePosX = nextX;
+	msgOld->spritePosY = nextY;
+
+	if (msgOld->bulletPosX != 10000 && msgOld->bulletPosY != 10000) {
 		float distXB = (msgNew->bulletPosX - msgOld->bulletPosX);
 		float distYB = (msgNew->bulletPosY - msgOld->bulletPosY);
 
@@ -174,35 +175,19 @@ NetworkManager::PacketData NetworkManager::RunPrediction(float gameTime) {
 
 		float nextXB = msgOld->bulletPosX + displacementXB;
 		float nextYB = msgOld->bulletPosY + displacementYB;
-	//} else {
-		//msgOld->bulletPosX = msgNew->bulletPosX;
-		//msgOld->bulletPosY = msgNew->bulletPosY;
-	//}
 
-	// Rotation
+		msgOld->bulletPosX = nextXB;
+		msgOld->bulletPosY = nextYB;
+
+	} else {
+		msgOld->bulletPosX = msgNew->bulletPosX;
+		msgOld->bulletPosY = msgNew->bulletPosY;
+	}
+
 	float rot = (msgNew->rotationAngle - msgOld->rotationAngle);
 	float speedR = rot / time;
 	float displacementR = speedR * gameTimeDiff;
 	float nextR = msgOld->rotationAngle + displacementR;
-
-	// Check
-	/*if ((msgOld->spritePosX != msgNew->spritePosX) || (msgOld->spritePosY != msgNew->spritePosY)) {
-		std::cout << "---------------------------------------------------------------------------\n";
-		std::cout << gameTime << std::endl;
-		std::cout << "Sprite X Old, New : " << msgOld->spritePosX << " " << msgNew->spritePosX << std::endl;
-		std::cout << "Sprite Y : " << msgOld->spritePosY << " " << msgNew->spritePosY << std::endl;
-		std::cout << "Game Time Old, New : " << msgOld->gameTime << " " << msgNew->gameTime << std::endl;
-		std::cout << "Speed X, Y : " << speedX << " " << speedY << std::endl;
-		std::cout << "Displacement X, Y : " << displacementX << " " << displacementY << std::endl;
-		std::cout << "Next X, Y : " << nextX << " " << nextY << std::endl;
-		std::cout << "---------------------------------------------------------------------------\n";
-	}*/
-
-	//msgOld->gameTime = gameTime;
-	msgOld->spritePosX = nextX;
-	msgOld->spritePosY = nextY;
-	msgOld->bulletPosX = nextXB;
-	msgOld->bulletPosY = nextYB;
 	msgOld->rotationAngle = nextR;
 
 	PacketData returnData = *msgOld;

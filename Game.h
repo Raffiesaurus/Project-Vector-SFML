@@ -116,6 +116,8 @@ private:
 
 	sfp::PhysicsCircle bulletCircles[2];
 
+	sf::Text healthTexts[2];
+
 	sf::Sprite bgSprite;
 
 	sf::Vector2f playerPos;
